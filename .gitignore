@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Models and data
+models/checkpoints/
+models/*.bin
+models/*.safetensors
+data/*.csv
+data/*.json
+!data/sample_*.csv
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
