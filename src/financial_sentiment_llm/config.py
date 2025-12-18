@@ -1,4 +1,7 @@
 from pathlib import Path
+import random
+import numpy as np
+import torch
 
 # Project root
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -31,3 +34,16 @@ DATASET_WEIGHTS = {
     'twitter': 0.15,
     'fiqa': 0.25
 }
+
+# Reproducibility
+SEED = 42
+
+def set_seed(seed=SEED):
+    """Set seed for reproducibility."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    # Make CUDA deterministic (may slow down training slightly)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False

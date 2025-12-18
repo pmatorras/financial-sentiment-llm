@@ -58,10 +58,12 @@ def load_fiqa():
     
     # Convert continuous score to discrete label
     if 'score' in df.columns:
+        lower_threshold = df['score'].quantile(0.33)
+        upper_threshold = df['score'].quantile(0.67)
+        
         df['label'] = df['score'].apply(
-            lambda x: 0 if x < -0.1 else (2 if x > 0.1 else 1)
+            lambda x: 0 if x < lower_threshold else (2 if x > upper_threshold else 1)
         )
-        df['continuous_score'] = df['score']
     
     df['source'] = 'fiqa'
     return df
@@ -89,7 +91,7 @@ def balance_dataset(df, target_col='label'):
     
     return pd.concat(balanced_dfs, ignore_index=True).sample(frac=1, random_state=42)
 
-def prepare_combined_dataset(weights=None):
+def prepare_combined_dataset(weights=None, seed=42):
     """
     Load, balance, and combine all datasets.
     Returns train/val/test splits.
@@ -114,21 +116,21 @@ def prepare_combined_dataset(weights=None):
     fq_size = int(total_samples * weights['fiqa'])
     
     pb_sample = phrasebank_bal.sample(n=min(pb_size, len(phrasebank_bal)), 
-                                       replace=True, random_state=42)
+                                       replace=True, random_state=seed)
     tw_sample = twitter_bal.sample(n=min(tw_size, len(twitter_bal)), 
-                                    replace=True, random_state=42)
+                                    replace=True, random_state=seed)
     fq_sample = fiqa_bal.sample(n=min(fq_size, len(fiqa_bal)), 
-                                 replace=True, random_state=42)
+                                 replace=True, random_state=seed)
     
     # Combine
     combined = pd.concat([pb_sample, tw_sample, fq_sample], ignore_index=True)
-    combined = combined.sample(frac=1, random_state=42).reset_index(drop=True)
+    combined = combined.sample(frac=1, random_state=seed).reset_index(drop=True)
     
     # Split
     train_df, temp_df = train_test_split(combined, test_size=0.3, 
-                                          random_state=42, stratify=combined['label'])
+                                          random_state=seed, stratify=combined['label'])
     val_df, test_df = train_test_split(temp_df, test_size=0.5, 
-                                        random_state=42, stratify=temp_df['label'])
+                                        random_state=seed, stratify=temp_df['label'])
     
     # Clean up - keep only necessary columns
     required_cols = ['text', 'label', 'source']

@@ -4,13 +4,16 @@ import torch
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
 
-from financial_sentiment_llm.config import MODELS_DIR
+from financial_sentiment_llm.config import MODELS_DIR, set_seed  
 from financial_sentiment_llm.preprocessing import prepare_combined_dataset
 from financial_sentiment_llm.dataset import FinancialSentimentDataset
 from financial_sentiment_llm.model import FinancialSentimentModel
 from financial_sentiment_llm.train import train_model
 
 def main():
+    # Set seed for reproducibility
+    set_seed()
+
     # Prepare data
     data_splits = prepare_combined_dataset()
     
@@ -30,8 +33,11 @@ def main():
     
     # Train
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f"\n Using device: {device}")  # ADD THIS LINE
+    if device == 'cuda':
+        print(f"   GPU: {torch.cuda.get_device_name(0)}")  # ADD THIS LINE
     train_model(model, train_loader, val_loader, device=device, epochs=3)
-    model_path = MODELS_DIR / 'sentiment_model.pt'
+    model_path = MODELS_DIR / 'sentiment_model_v2_percentile.pt'
 
     # Save model
     torch.save(model.state_dict(), model_path)
