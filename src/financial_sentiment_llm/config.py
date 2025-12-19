@@ -21,23 +21,24 @@ FIQA_URL = "..."
 # Training hyperparameters
 BATCH_SIZE = 32
 LEARNING_RATE = 2e-5
-NUM_EPOCHS = 5
+NUM_EPOCHS = 10
 MAX_LENGTH = 128
+PATIENCE = 2
 
 # Model config
 #MODEL_NAME = 'bert-base-uncased'
 MODEL_NAME = 'ProsusAI/finbert'
-MODEL_PATH = MODELS_DIR / f'sentiment_model_v3_testFiQA_{MODEL_NAME.split('/')[-1]}.pt'
+MODEL_PATH = MODELS_DIR / f'sentiment_model_stop_testFiQA_{MODEL_NAME.split('/')[-1]}.pt'
 
 NUM_CLASSES = 3
 
 # Dataset weights
-DATASET_WEIGHTS_OLD = {
+DATASET_WEIGHTS = {
     'phrasebank': 0.6,
     'twitter': 0.15,
     'fiqa': 0.25
 }
-DATASET_WEIGHTS = {
+DATASET_WEIGHTS_ALTERNATIVE = {
     'phrasebank': 0.4,#0.6,
     'twitter': 0.1,#0.15,
     'fiqa': 0.5,#0.25

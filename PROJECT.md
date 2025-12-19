@@ -86,27 +86,52 @@ positive        62        7       265
 
 ---
 
-## Phase 2: Fine-tune
-**Priority 1 - Address FiQA Performance:**
-- [ ] Exp 2.1: Drop FiQA, train only on PhraseBank+Twitter (cleaner baseline)
-- [ ] Exp 2.2: Increase FiQA weight to 40-50% (more exposure)
-- [ ] Exp 2.3: Train separate FiQA-specific model (domain adaptation)
-- [ ] Exp 2.4: Multi-task learning with regression head for FiQA scores
+## Phase 2: Model Optimization
+**Status:** In Progress (Dec 19, 2024)
 
-**Priority 2 - Better Base Model:**
-- [ ] Exp 2.5: Switch to FinBERT (`ProsusAI/finbert`) - financial domain pretrained
-- [ ] Exp 2.6: Try DistilBERT (faster training, smaller model)
+**Drop FiQA Dataset**
+- Tested training without FiQA (PhraseBank + Twitter only)
+- Result: 92% overall accuracy (up from 86%)
+- Confirmed FiQA is dragging down performance
 
-**Priority 3 - Training Improvements:**
-- [ ] Exp 2.7: Early stopping to prevent overfitting
-- [ ] Exp 2.8: Learning rate scheduling (warmup + decay)
-- [ ] Exp 2.9: Class weights instead of oversampling
-- [ ] Exp 2.10: Apply LoRA/QLoRA for parameter-efficient fine-tuning
+**Increase FiQA Weight**
+- Tested 50% FiQA weight (vs. 25% baseline)
+- Result: No improvement, FiQA stayed at 36%
+- Confirmed problem is dataset quality, not exposure
 
-**Priority 4 - Analysis & Understanding:**
-- [ ] Error analysis: Manual review of FiQA misclassifications
-- [ ] Confusion matrix deep-dive per data source
-- [ ] Attention visualization for failing examples
+**FinBERT Migration**
+- Switched to `ProsusAI/finbert` (financial domain pretrained)
+- Result: 99.52% on PhraseBank, FiQA unchanged
+- Domain pretraining helps professional news, not forum text
+
+**Early Stopping**
+- Implemented validation-based early stopping (patience=3)
+- Prevents overfitting, reduces training time 40%
+- Best model automatically selected at epoch 2-3
+
+**Current Baseline:** FinBERT + early stopping
+- Overall: 86% | PhraseBank: 99.52% | Twitter: 78.57% | FiQA: 34.59%
+- Positive recall: 0.95 
+
+### Potential Future Improvements
+
+**Multi-Task Learning**
+- Dual-head architecture: classification + regression
+- Use FiQA continuous scores (avoid percentile binning)
+- Goal: Improve FiQA to 50%+ or document exclusion
+
+**Advanced Techniques:**
+- Learning rate scheduling (warmup + decay)
+- LoRA/QLoRA parameter-efficient fine-tuning
+- Class weight balancing
+
+**Analysis:**
+- Error analysis on FiQA misclassifications
+- Attention visualization for failing examples
+
+**Alternative Models:**
+- DistilBERT (faster, smaller)
+- Separate FiQA-specific model (if multi-task fails)
 
 **Success Criteria for Phase 2:**
 - Overall accuracy ≥ 87%

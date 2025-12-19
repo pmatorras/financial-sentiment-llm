@@ -23,7 +23,7 @@ def evaluate_model():
     
     # Load model
     model = FinancialSentimentModel()
-    model.load_state_dict(torch.load(MODEL_PATH))
+    model.load_state_dict(torch.load(MODEL_PATH, weights_only=True))
     
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model.to(device)
