@@ -6,7 +6,7 @@ from transformers import AutoTokenizer
 from sklearn.metrics import classification_report, confusion_matrix
 import pandas as pd
 
-from financial_sentiment_llm.config import MODELS_DIR
+from financial_sentiment_llm.config import MODEL_PATH, MODEL_NAME
 from financial_sentiment_llm.preprocessing import prepare_combined_dataset
 from financial_sentiment_llm.dataset import FinancialSentimentDataset
 from financial_sentiment_llm.model import FinancialSentimentModel
@@ -23,7 +23,7 @@ def evaluate_model():
     
     # Load model
     model = FinancialSentimentModel()
-    model.load_state_dict(torch.load(MODELS_DIR / 'sentiment_model_v2_percentile.pt'))
+    model.load_state_dict(torch.load(MODEL_PATH, weights_only=True))
     
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model.to(device)

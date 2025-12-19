@@ -15,11 +15,9 @@ venv/
 *.ipynb_checkpoints
 
 # Models and data
-models/checkpoints/
-models/*.bin
-models/*.safetensors
-data/*.csv
-data/*.json
+models/
+data/
+
 !data/sample_*.csv
 
 # IDE
