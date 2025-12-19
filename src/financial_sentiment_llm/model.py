@@ -1,18 +1,21 @@
 """Model architecture."""
 
 import torch.nn as nn
-from transformers import AutoModel
+from transformers import AutoModelForSequenceClassification
+from financial_sentiment_llm.config import MODEL_NAME
 
 class FinancialSentimentModel(nn.Module):
-    def __init__(self, model_name='bert-base-uncased', num_classes=3):
+    def __init__(self, model_name=None, num_classes=3):
         super().__init__()
-        self.bert = AutoModel.from_pretrained(model_name)
-        self.dropout = nn.Dropout(0.1)
-        self.classifier = nn.Linear(self.bert.config.hidden_size, num_classes)
+        if model_name is None:
+            model_name = MODEL_NAME
+        self.model = AutoModelForSequenceClassification.from_pretrained(
+            model_name,
+            num_labels=num_classes,
+            ignore_mismatched_sizes=True,
+            use_safetensors=True
+        )
     
     def forward(self, input_ids, attention_mask):
-        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-        pooled_output = outputs.pooler_output
-        pooled_output = self.dropout(pooled_output)
-        logits = self.classifier(pooled_output)
-        return logits
+        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+        return outputs.logits
