@@ -1,61 +1,24 @@
-"""Main training script."""
+"""Main execution logic for finsentiment commands."""
 
-import torch
-from torch.utils.data import DataLoader
-from transformers import AutoTokenizer
+import argparse
+from finsentiment.cli.parser import create_parser
+from finsentiment.cli import train, evaluate
 
-from finsentiment.config import(
-    MODEL_NAME,
-    NUM_EPOCHS,
-    LEARNING_RATE,
-    PATIENCE,
-    MODEL_PATH,
-    set_seed
-)
-from finsentiment.datasets.preprocessing import prepare_combined_dataset
-from finsentiment.datasets.dataset_single import FinancialSentimentDataset
-from finsentiment.modeling.single_task import FinancialSentimentModel
-from finsentiment.training.trainer_single import train_model
 
 def main():
-    # Set seed for reproducibility
-    set_seed()
+    """Parse arguments and route to command handlers."""
+    # Parse arguments
+    parser = create_parser()
+    args = parser.parse_args()
+    
+    # Route to appropriate command
+    if args.command == 'train':
+        train.execute(args)
+    elif args.command == 'evaluate':
+        evaluate.execute(args)
+    else:
+        parser.print_help()
 
-    # Prepare data
-    data_splits = prepare_combined_dataset()
-    
-    # Load tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    
-    # Create datasets
-    train_dataset = FinancialSentimentDataset(data_splits['train'], tokenizer)
-    val_dataset = FinancialSentimentDataset(data_splits['val'], tokenizer)
-    
-    # Create dataloaders
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=32)
-    
-    # Initialize model
-    model = FinancialSentimentModel()
-    
-    # Train
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(f"\n Using device: {device}")  # ADD THIS LINE
-    if device == 'cuda':
-        print(f"   GPU: {torch.cuda.get_device_name(0)}")  # ADD THIS LINE
-    model = train_model(
-        model, 
-        train_loader, 
-        val_loader, 
-        device=device, 
-        epochs=NUM_EPOCHS,
-        lr=LEARNING_RATE,
-        patience=PATIENCE,
-        save_path=MODEL_PATH
-    )
-    # Save model
-    torch.save(model.state_dict(), MODEL_PATH)
-    print(f"\n✓ Training complete! Model saved to {MODEL_PATH}")
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

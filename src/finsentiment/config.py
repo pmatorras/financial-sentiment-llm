@@ -56,3 +56,7 @@ def set_seed(seed=SEED):
     # Make CUDA deterministic (may slow down training slightly)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+
+def get_model_path(model_type='single'):
+    """Get default model checkpoint path."""
+    return MODELS_DIR / f"{model_type}_task_model.pt"
