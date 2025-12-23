@@ -12,10 +12,10 @@ from finsentiment.config import(
     MODEL_PATH,
     set_seed
 )
-from finsentiment.preprocessing import prepare_combined_dataset
-from finsentiment.dataset import FinancialSentimentDataset
-from finsentiment.model import FinancialSentimentModel
-from finsentiment.train import train_model
+from finsentiment.datasets.preprocessing import prepare_combined_dataset
+from finsentiment.datasets.dataset_single import FinancialSentimentDataset
+from finsentiment.modeling.single_task import FinancialSentimentModel
+from finsentiment.training.trainer_single import train_model
 
 def main():
     # Set seed for reproducibility
