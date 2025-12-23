@@ -1,7 +1,7 @@
 """Dataset loading and preprocessing utilities."""
 
 import pandas as pd
-from financial_sentiment_llm.config import RAW_DATA_DIR
+from finsentiment.config import RAW_DATA_DIR
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
 from datasets import load_dataset

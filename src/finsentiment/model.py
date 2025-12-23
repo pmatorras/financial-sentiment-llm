@@ -2,7 +2,7 @@
 
 import torch.nn as nn
 from transformers import AutoModelForSequenceClassification
-from financial_sentiment_llm.config import MODEL_NAME
+from finsentiment.config import MODEL_NAME
 
 class FinancialSentimentModel(nn.Module):
     def __init__(self, model_name=None, num_classes=3):

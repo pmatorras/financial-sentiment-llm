@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
 
-from financial_sentiment_llm.config import(
+from finsentiment.config import(
     MODEL_NAME,
     NUM_EPOCHS,
     LEARNING_RATE,
@@ -12,10 +12,10 @@ from financial_sentiment_llm.config import(
     MODEL_PATH,
     set_seed
 )
-from financial_sentiment_llm.preprocessing import prepare_combined_dataset
-from financial_sentiment_llm.dataset import FinancialSentimentDataset
-from financial_sentiment_llm.model import FinancialSentimentModel
-from financial_sentiment_llm.train import train_model
+from finsentiment.preprocessing import prepare_combined_dataset
+from finsentiment.dataset import FinancialSentimentDataset
+from finsentiment.model import FinancialSentimentModel
+from finsentiment.train import train_model
 
 def main():
     # Set seed for reproducibility

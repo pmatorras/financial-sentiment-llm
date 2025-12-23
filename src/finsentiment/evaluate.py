@@ -6,10 +6,10 @@ from transformers import AutoTokenizer
 from sklearn.metrics import classification_report, confusion_matrix
 import pandas as pd
 
-from financial_sentiment_llm.config import MODEL_PATH, MODEL_NAME
-from financial_sentiment_llm.preprocessing import prepare_combined_dataset
-from financial_sentiment_llm.dataset import FinancialSentimentDataset
-from financial_sentiment_llm.model import FinancialSentimentModel
+from finsentiment.config import MODEL_PATH, MODEL_NAME
+from finsentiment.preprocessing import prepare_combined_dataset
+from finsentiment.dataset import FinancialSentimentDataset
+from finsentiment.model import FinancialSentimentModel
 
 def evaluate_model():
     # Load data
