@@ -23,6 +23,8 @@ def load_phrasebank():
         print(f"✓ Saved to {file_path}")
     
     df['source'] = 'phrasebank'
+    df['task_type'] = 'classification'
+    df['score'] = 0.0 # Placeholder
     return df
 
 def load_twitter():
@@ -40,9 +42,11 @@ def load_twitter():
         print(f"✓ Saved to {file_path}")
     
     df['source'] = 'twitter'
+    df['task_type'] = 'classification'
+    df['score'] = 0.0 # Placeholder
     return df
 
-def load_fiqa():
+def load_fiqa(multi_task=False):
     """Load FiQA dataset with continuous scores."""
     file_path = RAW_DATA_DIR / "fiqa.csv"
     
@@ -56,21 +60,19 @@ def load_fiqa():
         df.to_csv(file_path, index=False)
         print(f"✓ Saved to {file_path}")
     
-    # Convert continuous score to discrete label
-    if 'score' in df.columns:
-        lower_threshold = df['score'].quantile(0.33)
-        upper_threshold = df['score'].quantile(0.67)
-        
-        df['label'] = df['score'].apply(
-            lambda x: 0 if x < lower_threshold else (2 if x > upper_threshold else 1)
-        )
+    if multi_task:
+        df['task_type'] = 'regression'
+        # Explicit thresholds for label creation (used for stratification/balancing)
+        if 'score' in df.columns:
+            df['label'] = df['score'].apply(lambda x: 0 if x < -0.1 else (2 if x > 0.1 else 1))
+    else:
+        df['task_type'] = 'classification'
+        # Convert continuous score to discrete label
+        # UPDATED: Use explicit thresholds instead of quantiles to avoid zero-spike issues
+        if 'score' in df.columns:
+            df['label'] = df['score'].apply(lambda x: 0 if x < -0.1 else (2 if x > 0.1 else 1))
     
     df['source'] = 'fiqa'
-    return df
-
-def balance_dataset(df, method='oversample'):
-    """Balance dataset classes."""
-    # Your balancing logic here
     return df
 
 def balance_dataset(df, target_col='label'):
@@ -91,7 +93,7 @@ def balance_dataset(df, target_col='label'):
     
     return pd.concat(balanced_dfs, ignore_index=True).sample(frac=1, random_state=42)
 
-def prepare_combined_dataset(weights=None, seed=42):
+def prepare_combined_dataset(weights=None, seed=42, multi_task=False):
     """
     Load, balance, and combine all datasets.
     Returns train/val/test splits.
@@ -102,7 +104,7 @@ def prepare_combined_dataset(weights=None, seed=42):
     print("Loading datasets...")
     phrasebank = load_phrasebank()
     twitter = load_twitter()
-    fiqa = load_fiqa()
+    fiqa = load_fiqa(multi_task=multi_task)
     
     print("Balancing datasets...")
     phrasebank_bal = balance_dataset(phrasebank)
@@ -123,7 +125,6 @@ def prepare_combined_dataset(weights=None, seed=42):
                                  replace=True, random_state=seed)
     
     # Combine
-    #combined = pd.concat([pb_sample, tw_sample], ignore_index=True)
     combined = pd.concat([pb_sample, tw_sample, fq_sample], ignore_index=True)
     combined = combined.sample(frac=1, random_state=seed).reset_index(drop=True)
     
@@ -134,11 +135,10 @@ def prepare_combined_dataset(weights=None, seed=42):
                                         random_state=seed, stratify=temp_df['label'])
     
     # Clean up - keep only necessary columns
-    required_cols = ['text', 'label', 'source']
-    # Add continuous_score if it exists and has values
-    if 'continuous_score' in combined.columns and combined['continuous_score'].notna().any():
-        required_cols.append('continuous_score')
-    
+    required_cols = ['text', 'label', 'source', 'task_type']
+    if multi_task and 'score' in combined.columns:
+        required_cols.append('score')
+
     train_df = train_df[required_cols].copy()
     val_df = val_df[required_cols].copy()
     test_df = test_df[required_cols].copy()
