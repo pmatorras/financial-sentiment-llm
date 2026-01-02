@@ -13,11 +13,9 @@ from finsentiment.config import (
     set_seed,
     get_model_path
 )
-from finsentiment.datasets.preprocessing import prepare_combined_dataset
-from finsentiment.datasets.dataset_single import FinancialSentimentDataset
-from finsentiment.modeling.single_task import FinancialSentimentModel
-from finsentiment.training.trainer_single import train_model
-
+from finsentiment.datasets import prepare_combined_dataset, get_dataset_class
+from finsentiment.modeling import get_model_class
+from finsentiment.training import get_trainer_function
 
 def execute(args):
     """
@@ -30,33 +28,40 @@ def execute(args):
             - batch_size: Batch size for training
             - lr: Learning rate
     """
-    # Set seed for reproducibility
-    set_seed()
-    
+    # Get configuration and components
+    is_multi_task = (args.model_type == 'multi')
+    print(f"Running on: Mode={args.model_type}, MultiTask={is_multi_task}")
+
+    DatasetClass = get_dataset_class(multi_task=is_multi_task)
+    ModelClass = get_model_class(multi_task=is_multi_task)
+    train_fn = get_trainer_function(multi_task=is_multi_task)
     # Prepare data
-    data_splits = prepare_combined_dataset()
+    set_seed()
+    data_splits = prepare_combined_dataset(multi_task=is_multi_task)
     
     # Load tokenizer
+
+
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     
-    # Create datasets
-    train_dataset = FinancialSentimentDataset(data_splits['train'], tokenizer)
-    val_dataset = FinancialSentimentDataset(data_splits['val'], tokenizer)
     
+    train_dataset = DatasetClass(data_splits['train'], tokenizer)
+    val_dataset = DatasetClass(data_splits['val'], tokenizer)
+
     # Create dataloaders
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size)
     
     # Initialize model
-    model = FinancialSentimentModel()
+    model = ModelClass()
     
     # Train
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"\nUsing device: {device}")
     if device == 'cuda':
         print(f"GPU: {torch.cuda.get_device_name(0)}")
-    
-    model = train_model(
+
+    model = train_fn(
         model,
         train_loader,
         val_loader,

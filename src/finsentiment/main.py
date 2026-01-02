@@ -1,6 +1,5 @@
 """Main execution logic for finsentiment commands."""
 
-import argparse
 from finsentiment.cli.parser import create_parser
 from finsentiment.cli import train, evaluate
 

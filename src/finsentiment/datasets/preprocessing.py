@@ -22,10 +22,13 @@ def load_phrasebank():
         df.to_csv(file_path, index=False)
         print(f"✓ Saved to {file_path}")
     
+    df['task_type'] = 'classification'
+    df['score'] = 0.0
     df['source'] = 'phrasebank'
     return df
 
 def load_twitter():
+    
     """Load Twitter financial sentiment dataset."""
     file_path = RAW_DATA_DIR / "twitter.csv"
     
@@ -39,10 +42,12 @@ def load_twitter():
         df.to_csv(file_path, index=False)
         print(f"✓ Saved to {file_path}")
     
+    df['task_type'] = 'classification'
+    df['score'] = 0.0
     df['source'] = 'twitter'
     return df
 
-def load_fiqa():
+def load_fiqa(multi_task=False):
     """Load FiQA dataset with continuous scores."""
     file_path = RAW_DATA_DIR / "fiqa.csv"
     
@@ -56,21 +61,25 @@ def load_fiqa():
         df.to_csv(file_path, index=False)
         print(f"✓ Saved to {file_path}")
     
-    # Convert continuous score to discrete label
-    if 'score' in df.columns:
-        lower_threshold = df['score'].quantile(0.33)
-        upper_threshold = df['score'].quantile(0.67)
-        
-        df['label'] = df['score'].apply(
-            lambda x: 0 if x < lower_threshold else (2 if x > upper_threshold else 1)
-        )
+    if multi_task:
+        df['task_type'] = 'regression'
+        if 'score' in df.columns:
+            df['label'] = df['score'].apply(lambda x: 0 if x < -0.1 else (2 if x > 0.1 else 1))
+            lower_threshold = df['score'].quantile(0.33)
+            upper_threshold = df['score'].quantile(0.67)
+            print(f"DEBUG FiQA Quantiles: 33%={lower_threshold:.4f}, 67%={upper_threshold:.4f}")
+    else:
+        df['task_type'] = 'classification'
+        # Convert continuous score to discrete label
+        if 'score' in df.columns:
+            lower_threshold = df['score'].quantile(0.33)
+            upper_threshold = df['score'].quantile(0.67)
+
+            df['label'] = df['score'].apply(
+                lambda x: 0 if x < lower_threshold else (2 if x > upper_threshold else 1)
+            )
     
     df['source'] = 'fiqa'
-    return df
-
-def balance_dataset(df, method='oversample'):
-    """Balance dataset classes."""
-    # Your balancing logic here
     return df
 
 def balance_dataset(df, target_col='label'):
@@ -91,18 +100,19 @@ def balance_dataset(df, target_col='label'):
     
     return pd.concat(balanced_dfs, ignore_index=True).sample(frac=1, random_state=42)
 
-def prepare_combined_dataset(weights=None, seed=42):
+def prepare_combined_dataset(weights=None, seed=42, multi_task=False):
     """
     Load, balance, and combine all datasets.
     Returns train/val/test splits.
     """
     if weights is None:
-        weights = {'phrasebank': 0.6, 'twitter': 0.15, 'fiqa': 0.25}
-    
+        weights = {'phrasebank': 0.0, 'twitter': 0.0, 'fiqa': 1.0}
+        #weights = {'phrasebank': 0.6, 'twitter': 0.15, 'fiqa': 0.25}
+
     print("Loading datasets...")
     phrasebank = load_phrasebank()
     twitter = load_twitter()
-    fiqa = load_fiqa()
+    fiqa = load_fiqa(multi_task=multi_task)
     
     print("Balancing datasets...")
     phrasebank_bal = balance_dataset(phrasebank)
@@ -135,6 +145,8 @@ def prepare_combined_dataset(weights=None, seed=42):
     
     # Clean up - keep only necessary columns
     required_cols = ['text', 'label', 'source']
+    if multi_task:
+        required_cols.extend(['score', 'task_type'])
     # Add continuous_score if it exists and has values
     if 'continuous_score' in combined.columns and combined['continuous_score'].notna().any():
         required_cols.append('continuous_score')
