@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "financial-sentiment-llm"
-version = "0.1.0"
+name = "finsentiment"
+version = "0.2.0"
 description = "Fine-tuned LLM for financial sentiment analysis"
 authors = [{name = "Pablo Matorras-Cuevas", email = "pablo.matorras@github.com"}]
 readme = "README.md"
