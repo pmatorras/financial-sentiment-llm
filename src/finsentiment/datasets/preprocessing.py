@@ -60,17 +60,15 @@ def load_fiqa(multi_task=False):
         df.to_csv(file_path, index=False)
         print(f"✓ Saved to {file_path}")
     
+    # Use explicit thresholds for labels (needed for stratification/balancing)
+    # Avoids 33% quantile forcing which mislabels neutral events
+    if 'score' in df.columns:
+        df['label'] = df['score'].apply(lambda x: 0 if x < -0.1 else (2 if x > 0.1 else 1))
+
     if multi_task:
         df['task_type'] = 'regression'
-        # Explicit thresholds for label creation (used for stratification/balancing)
-        if 'score' in df.columns:
-            df['label'] = df['score'].apply(lambda x: 0 if x < -0.1 else (2 if x > 0.1 else 1))
     else:
         df['task_type'] = 'classification'
-        # Convert continuous score to discrete label
-        # UPDATED: Use explicit thresholds instead of quantiles to avoid zero-spike issues
-        if 'score' in df.columns:
-            df['label'] = df['score'].apply(lambda x: 0 if x < -0.1 else (2 if x > 0.1 else 1))
     
     df['source'] = 'fiqa'
     return df
@@ -101,91 +99,54 @@ def balance_dataset(df, target_col='label'):
 
 def prepare_combined_dataset(weights=None, seed=42, multi_task=False):
     """
-    Prepare combined dataset with proper train/val/test split.
-    
-    CRITICAL SCIENTIFIC FIX: 
-    1. We generate 'labels' for FiQA (even if regression) ONLY to enable Stratified Splitting and Balancing.
-    2. We Split BEFORE Balancing to prevent Data Leakage (identical samples in Train/Test).
-    3. We use explicit thresholds (-0.1, 0.1) for FiQA to respect the sentiment physics, 
-       rather than forcing a 33% split which mislabels neutral events.
+    Load, balance, and combine all datasets.
+    Returns train/val/test splits.
     """
     if weights is None:
-        # Default weights favoring high-quality data (FiQA/PB) while using Twitter for volume.
         weights = {'phrasebank': 0.33, 'twitter': 0.33, 'fiqa': 0.34}
     
-    # 1. Load raw (imbalanced) datasets
+    print("Loading datasets...")
     phrasebank = load_phrasebank()
     twitter = load_twitter()
     fiqa = load_fiqa(multi_task=multi_task)
     
-    # --- FIQA SPECIAL HANDLING ---
-    # We need labels for stratification and balancing, even if the task is regression.
-    if multi_task and 'score' in fiqa.columns:
-        print("\\n--- FiQA Physics Check ---")
-        # Generate labels based on Explicit Thresholds (Science) vs Quantiles (Distribution)
-        # We stick to the Explicit Thresholds (-0.1, 0.1) for truth, but print quantiles for awareness.
-        lower_q = fiqa['score'].quantile(0.33)
-        upper_q = fiqa['score'].quantile(0.67)
-        print(f"DEBUG: Natural Data Quantiles -> 33%: {lower_q:.4f}, 67%: {upper_q:.4f}")
-        print(f"DEBUG: Using Explicit Thresholds -> Negative < -0.1, Positive > 0.1")
-        
-        # Apply the explicit thresholds to create the stratification label
-        fiqa['label'] = fiqa['score'].apply(lambda x: 0 if x < -0.1 else (2 if x > 0.1 else 1))
-    
-    # 2. Sample according to weights (keeping raw/imbalanced distribution)
+    # Sample raw data first
     total_samples = 10000
-    pb_raw = phrasebank.sample(
-        n=min(int(total_samples * weights['phrasebank']), len(phrasebank)), 
-        random_state=seed
-    )
-    tw_raw = twitter.sample(
-        n=min(int(total_samples * weights['twitter']), len(twitter)), 
-        random_state=seed
-    )
-    fq_raw = fiqa.sample(
-        n=min(int(total_samples * weights['fiqa']), len(fiqa)), 
-        random_state=seed
-    )
+    pb_size = min(int(total_samples * weights['phrasebank']), len(phrasebank))
+    tw_size = min(int(total_samples * weights['twitter']), len(twitter))
+    fq_size = min(int(total_samples * weights['fiqa']), len(fiqa))
     
-    # 3. Combine raw datasets
-    combined_raw = pd.concat([pb_raw, tw_raw, fq_raw], ignore_index=True)
+    pb_sample = phrasebank.sample(n=pb_size, random_state=seed)
+    tw_sample = twitter.sample(n=tw_size, random_state=seed)
+    fq_sample = fiqa.sample(n=fq_size, random_state=seed)
     
-    print(f"\\nRaw Dataset Statistics:")
-    print(f"Total samples: {len(combined_raw)}")
-    if 'label' in combined_raw.columns:
-        print("Label distribution (Imbalanced / Authentic):")
-        print(combined_raw['label'].value_counts().sort_index())
+    # Combine
+    combined = pd.concat([pb_sample, tw_sample, fq_sample], ignore_index=True)
+    combined = combined.sample(frac=1, random_state=seed).reset_index(drop=True)
     
-    # 4. SPLIT FIRST (Stratified)
-    # This prevents 'Twin Leakage' where a copy of a sample ends up in both Train and Test.
-    stratify_col = combined_raw['label'] if 'label' in combined_raw.columns else None
+    # Split BEFORE balancing (Fixes data leakage)
+    train_df, temp_df = train_test_split(combined, test_size=0.3, 
+                                          random_state=seed, stratify=combined['label'])
+    val_df, test_df = train_test_split(temp_df, test_size=0.5, 
+                                        random_state=seed, stratify=temp_df['label'])
     
-    train_df, temp_df = train_test_split(
-        combined_raw, 
-        test_size=0.3, 
-        random_state=seed, 
-        stratify=stratify_col
-    )
-    val_df, test_df = train_test_split(
-        temp_df, 
-        test_size=0.5, 
-        random_state=seed, 
-        stratify=temp_df['label'] if 'label' in temp_df.columns else None
-    )
-    
-    print(f"\\nAfter Split (Before Balancing):")
-    print(f"Train: {len(train_df)}, Val: {len(val_df)}, Test: {len(test_df)}")
-    
-    # 5. BALANCE ONLY TRAINING DATA
-    # We upsample the Training set to help the model learn rare classes.
-    # We LEAVE Validation/Test sets alone to measure performance on real-world distributions.
-    print("\\nBalancing Training Set (Upsampling minority classes)...")
+    print("Balancing datasets...")
+    # Balance only the training set
     train_df = balance_dataset(train_df)
     
-    print(f"\\nFinal Dataset Shapes:")
-    print(f"Train: {len(train_df)} (Balanced)")
-    print(f"Val:   {len(val_df)} (Authentic Imbalance)")
-    print(f"Test:  {len(test_df)} (Authentic Imbalance)")
+    # Clean up - keep only necessary columns
+    required_cols = ['text', 'label', 'source', 'task_type']
+    if multi_task and 'score' in combined.columns:
+        required_cols.append('score')
+
+    train_df = train_df[required_cols].copy()
+    val_df = val_df[required_cols].copy()
+    test_df = test_df[required_cols].copy()
+    
+    print(f"\nDataset prepared:")
+    print(f"  Train: {len(train_df)}")
+    print(f"  Val: {len(val_df)}")
+    print(f"  Test: {len(test_df)}")
     
     return {
         'train': train_df,
