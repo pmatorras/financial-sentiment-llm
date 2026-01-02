@@ -57,6 +57,8 @@ def load_fiqa(multi_task=False):
         print(f"Downloading FiQA dataset to {file_path}...")
         dataset = load_dataset("TheFinAI/fiqa-sentiment-classification")
         df = pd.DataFrame(dataset['train'])
+        if 'sentence' in df.columns:
+            df = df.rename(columns={'sentence': 'text'})
         RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
         df.to_csv(file_path, index=False)
         print(f"✓ Saved to {file_path}")
@@ -74,10 +76,15 @@ def load_fiqa(multi_task=False):
         if 'score' in df.columns:
             lower_threshold = df['score'].quantile(0.33)
             upper_threshold = df['score'].quantile(0.67)
-
-            df['label'] = df['score'].apply(
-                lambda x: 0 if x < lower_threshold else (2 if x > upper_threshold else 1)
-            )
+            def get_label(x):
+                    if x < -0.1: return 0
+                    if x > 0.1: return 2
+                    return 1
+                
+            df['label'] = df['score'].apply(get_label)
+            #df['label'] = df['score'].apply(
+            #    lambda x: 0 if x < lower_threshold else (2 if x > upper_threshold else 1)
+            #)
     
     df['source'] = 'fiqa'
     return df
@@ -102,35 +109,30 @@ def balance_dataset(df, target_col='label'):
 
 def prepare_combined_dataset(weights=None, seed=42, multi_task=False):
     """
-    Load, balance, and combine all datasets.
+    Load, balance (train only), and combine all datasets.
     Returns train/val/test splits.
     """
     if weights is None:
-        weights = {'phrasebank': 0.0, 'twitter': 0.0, 'fiqa': 1.0}
-        #weights = {'phrasebank': 0.6, 'twitter': 0.15, 'fiqa': 0.25}
+        #weights = {'phrasebank': 0.0, 'twitter': 0.0, 'fiqa': 1.0}
+        weights = {'phrasebank': 0.33, 'twitter': 0.33, 'fiqa': 0.34}
 
     print("Loading datasets...")
     phrasebank = load_phrasebank()
     twitter = load_twitter()
     fiqa = load_fiqa(multi_task=multi_task)
     
-    print("Balancing datasets...")
-    phrasebank_bal = balance_dataset(phrasebank)
-    twitter_bal = balance_dataset(twitter)
-    fiqa_bal = balance_dataset(fiqa)
-    
-    # Sample according to weights
+    # Sample raw data according to weights
     total_samples = 10000
     pb_size = int(total_samples * weights['phrasebank'])
     tw_size = int(total_samples * weights['twitter'])
     fq_size = int(total_samples * weights['fiqa'])
     
-    pb_sample = phrasebank_bal.sample(n=min(pb_size, len(phrasebank_bal)), 
-                                       replace=True, random_state=seed)
-    tw_sample = twitter_bal.sample(n=min(tw_size, len(twitter_bal)), 
-                                    replace=True, random_state=seed)
-    fq_sample = fiqa_bal.sample(n=min(fq_size, len(fiqa_bal)), 
-                                 replace=True, random_state=seed)
+    pb_sample = phrasebank.sample(n=min(pb_size, len(phrasebank)), 
+                                   random_state=seed)
+    tw_sample = twitter.sample(n=min(tw_size, len(twitter)), 
+                                random_state=seed)
+    fq_sample = fiqa.sample(n=min(fq_size, len(fiqa)), 
+                             random_state=seed)
     
     # Combine
     #combined = pd.concat([pb_sample, tw_sample], ignore_index=True)
@@ -142,6 +144,9 @@ def prepare_combined_dataset(weights=None, seed=42, multi_task=False):
                                           random_state=seed, stratify=combined['label'])
     val_df, test_df = train_test_split(temp_df, test_size=0.5, 
                                         random_state=seed, stratify=temp_df['label'])
+    
+    print("Balancing datasets...")
+    train_df = balance_dataset(train_df)
     
     # Clean up - keep only necessary columns
     required_cols = ['text', 'label', 'source']

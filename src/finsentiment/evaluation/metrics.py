@@ -53,14 +53,14 @@ def evaluate_model(model, test_loader, device='cuda', is_multi_task=False):
                         task_type='regression'
                     )
                     scores = scores.cpu()
-                    print(f"DEBUG FiQA Preds: Mean={scores.mean():.4f}, Std={scores.std():.4f}, Min={scores.min():.4f}, Max={scores.max():.4f}")
                     # Convert continuous scores to discrete labels [0, 1, 2]                    
                     reg_labels = torch.zeros_like(scores, dtype=torch.long)
                     
                     # Default is 0 (Negative), so we only update for Neutral and Positive
-                    reg_labels[scores > 0.395] = 2       # Positive
-                    reg_labels[(scores >= 0.30) & (scores <= 0.395)] = 1  # Neutral
-                    
+                    #reg_labels[scores > 0.395] = 2       # Positive
+                    #reg_labels[(scores >= 0.0) & (scores <= 0.395)] = 1  # Neutral
+                    reg_labels[scores > 0.1] = 2       # Positive
+                    reg_labels[(scores >= -0.1) & (scores <= 0.1)] = 1  # Neutral
                     batch_preds[reg_mask] = reg_labels
                 
                 predictions = batch_preds
