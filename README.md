@@ -11,52 +11,52 @@ Learn LLM fine-tuning techniques by building a financial sentiment classifier, t
 - Python 3.10+
 - HuggingFace Transformers, Datasets
 - PyTorch (with CUDA support)
-- Multi-dataset training approach
+- Multi-dataset training approach (Classification + Regression Multi-Task)
 - Future: LoRA/QLoRA for parameter-efficient fine-tuning
 
 
 ## Current Status
-**Phase 1 Complete** - Baseline Model Established (2025-12-17)
+**Phase 2 Complete** - Multi-Task Architecture (2026-01-03)
 
-- **Test Accuracy:** 85.1%
-- **Model:** BERT fine-tuned on 3 financial sentiment datasets
-- **Key Finding:** Excellent performance on professional news (99%), challenges with forum discussions (35%)
+- **Test Accuracy:** 85.0%
+- **Model:** FinBERT with Multi-Task Head (Classification + Regression)
+- **Key Finding:** Treating FiQA scores as regression targets improved accuracy on that dataset by **+15%** (from 65% to 80%).
 
-**In Progress** - Phase 2: Model Optimization & Fine-tuning
+**Next Steps** - Phase 3: Deployment & Integration
 
 
 See [PROJECT.md](PROJECT.md) for detailed results and roadmap.
 
-## Quick Results
+## Quick Results (Multi-Task Model)
 
 | Metric | Value |
 |--------|-------|
-| Overall Accuracy | 86.0% |
-| Macro F1-Score | 0.86 |
+| Overall Accuracy | 85.0% |
+| Macro F1-Score | 0.84 |
 
 ### Performance by Dataset Source
 
-| Dataset | Accuracy | Samples | Style |
-|---------|----------|---------|-------|
-| FinancialPhraseBank | 98.88% | 624 | Professional news |
-| Twitter Financial | 78.12% | 224 | Social media |
-| FiQA Forums | 36.09% | 133 | Retail discussions ⚠️ |
+| Dataset | Accuracy | Samples | Style | Status |
+|---------|----------|---------|-------|--------|
+| FinancialPhraseBank | 92.1% | 343 | Professional news | Excellent |
+| Twitter Financial | 81.2% | 499 | Social media | Robust |
+| FiQA Forums | 80.2% | 116 | Retail discussions | **Fixed (+15%)** |
 
 ### Performance by Sentiment Class
 
 | Class | Precision | Recall | F1-Score |
 |-------|-----------|--------|----------|
-| Negative | 0.74 | 0.96 | 0.84 |
-| Neutral | 0.95 | 0.82 | 0.88 |
-| Positive | 0.92 | 0.79 | 0.85 |
+| Negative | 0.73 | 0.87 | 0.79 |
+| Neutral | 0.88 | 0.84 | 0.86 |
+| Positive | 0.88 | 0.85 | 0.86 |
 
 ## Project Structure
 ```bash
 ├── src/
 │ ├── config.py # Paths and hyperparameters
-│ ├── preprocessing.py # Dataset loading & preprocessing
+│ ├── preprocessing.py # Dataset loading & preprocessing (Split-before-Balance)
 │ ├── dataset.py # PyTorch Dataset wrapper
-│ ├── model.py # Model architecture
+│ ├── model.py # Model architecture (MultiTaskModel)
 │ ├── train.py # Training loop
 │ ├── evaluate.py # Evaluation metrics
 │ └── main.py # Training entry point
@@ -121,9 +121,9 @@ python -m financial_sentiment_llm.evaluate
 
 ## Datasets
 
-- [Financial PhraseBank](https://huggingface.co/datasets/takala/financial_phrasebank) (60% weight)
-- [Twitter Financial News](https://huggingface.co/datasets/zeroshot/twitter-financial-news-sentiment) (15% weight)
-- [FiQA Sentiment](https://huggingface.co/datasets/TheFinAI/fiqa-sentiment-classification) (25% weight)
+- [Financial PhraseBank](https://huggingface.co/datasets/takala/financial_phrasebank) (33% weight)
+- [Twitter Financial News](https://huggingface.co/datasets/zeroshot/twitter-financial-news-sentiment) (33% weight)
+- [FiQA Sentiment](https://huggingface.co/datasets/TheFinAI/fiqa-sentiment-classification) (34% weight)
 
 ## Resources
 
