@@ -16,13 +16,13 @@ Learn LLM fine-tuning techniques by building a financial sentiment classifier, t
 
 
 ## Current Status
-**Phase 2 Complete** - Multi-Task Architecture (2026-01-03)
+**Phase 2 In Progress** - Multi-Task Architecture Validated (2026-01-03)
 
 - **Test Accuracy:** 85.0%
 - **Model:** FinBERT with Multi-Task Head (Classification + Regression)
 - **Key Finding:** Treating FiQA scores as regression targets improved accuracy on that dataset by **+15%** (from 65% to 80%).
 
-**Next Steps** - Phase 3: Deployment & Integration
+**Next Steps** - Optimize Hyperparameters & Analyze Errors
 
 
 See [PROJECT.md](PROJECT.md) for detailed results and roadmap.
