@@ -1,8 +1,12 @@
 # Experiment Log
 
 ## Phase 2: Model Optimization
+>WARNING (Jan 03, 2026):
+Results in this section (Dec 19 experiments) were obtained using a preprocessing pipeline that contained Data Leakage (Upsampling was applied before the Train/Test split).
+While the accuracy on FiQA remained low (36%), the PhraseBank/Twitter scores may be inflated due to duplicate samples appearing in both sets.
+See [Multi-Task Learning & Data Leakage Fix](#multi-task-learning--data-leakage-fix) section for the corrected baseline.
 
-## Drop FiQA Dataset
+### Drop FiQA Dataset
 **Date:** Dec 19, 2024
 **Goal:** Test if FiQA is hurting overall performance
 
@@ -160,3 +164,34 @@ positive         9        7       318  ← Many more correct!
 - Positive recall: 0.79 → **0.95** (catches almost all positive sentiment)
 - Positive precision: 0.92 → 0.75 (more false positives, but acceptable tradeoff)
 - PhraseBank: 98.88% → **99.52%** (near-perfect on professional news)
+
+***
+
+### Multi-Task Learning & Data Leakage Fix
+
+**Date:** Jan 03, 2026
+**Goal:** Fix methodological errors (leakage) and improve FiQA performance using regression.
+
+**1. The Methodological Fix (Data Leakage):**
+*   **Issue:** Previous pipeline upsampled data *before* splitting train/test. This caused "clones" (identical samples) to appear in both sets.
+*   **Fix:** Refactored pipeline to Split → Stratify → Balance (Train Only).
+*   **Impact:** Test set is now purely unseen data. "Real" baseline established.
+
+**2. Multi-Task Architecture:**
+*   **Hypothesis:** FiQA is regression data (continuous scores). Forcing it into classification bins loses information.
+*   **Solution:** Multi-Task Head (Classification + Regression).
+*   **Loss:** `CrossEntropy + 5 * MSE` (Regression weighted higher).
+
+**Results (Post-Fix):**
+
+| Dataset | Single-Task (Baseline) | Multi-Task (Final) | Delta |
+|---------|------------------------|--------------------|-------|
+| **FiQA** | 65.52% | **80.17%** | **+14.6%** |
+| PhraseBank | 93.29% | 92.13% | -1.1% |
+| Twitter | 79.76% | 81.16% | +1.4% |
+| **Overall** | 83.0% | **85.0%** | +2.0% |
+
+**Conclusion:**
+*   **Leakage Fixed:** Single-task FiQA score dropped to 65% (realistic baseline).
+*   **Hypothesis Confirmed:** Multi-task learning drastically improved FiQA performance (+15%) by respecting the continuous nature of the data.
+*   **Robustness:** The model now generalizes to complex financial text instead of just memorizing it.

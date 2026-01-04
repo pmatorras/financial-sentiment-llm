@@ -22,7 +22,7 @@ def create_parser():
     
     # Train
     train_parser = subparsers.add_parser('train', help='Train a model')
-    train_parser.add_argument('--model-type', choices=['single', 'multi'], default='single')
+    train_parser.add_argument('--model-type', choices=['single', 'multi'], default='multi')
     train_parser.add_argument('--epochs', type=int, default=NUM_EPOCHS)
     train_parser.add_argument('--batch-size', type=int, default=BATCH_SIZE)
     train_parser.add_argument('--lr', type=float, default=LEARNING_RATE)
