@@ -14,7 +14,6 @@ Learn LLM fine-tuning techniques by building a financial sentiment classifier, t
 - Multi-dataset training approach (Classification + Regression Multi-Task)
 - Future: LoRA/QLoRA for parameter-efficient fine-tuning
 
-
 ## Current Status
 **Phase 2 In Progress** - Multi-Task Architecture Validated (2026-01-03)
 
@@ -24,8 +23,13 @@ Learn LLM fine-tuning techniques by building a financial sentiment classifier, t
 
 **Next Steps** - Optimize Hyperparameters & Analyze Errors
 
-
 See [PROJECT.md](PROJECT.md) for detailed results and roadmap.
+
+## Datasets
+
+- [Financial PhraseBank](https://huggingface.co/datasets/takala/financial_phrasebank) (Target: 33%, Actual: Limited by size)
+- [Twitter Financial News](https://huggingface.co/datasets/zeroshot/twitter-financial-news-sentiment) (Target: 33%)
+- [FiQA Sentiment](https://huggingface.co/datasets/TheFinAI/fiqa-sentiment-classification) (Target: 34%, Actual: Limited by size)
 
 ## Quick Results (Multi-Task Model)
 
@@ -106,6 +110,7 @@ python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
 ### Training
 ```bash
 # Train baseline model (Downloads datasets automatically on first run, ~10MB total)
+# Defaults to Multi-Task architecture (use --model-type single for baseline)
 python -m financial_sentiment_llm.main
 ```
 **Training Time:**
@@ -115,15 +120,10 @@ python -m financial_sentiment_llm.main
 ### Evaluation
 ```bash
 #Evaluate trained model on test set
+# Defaults to Multi-Task architecture (use --model-type single for baseline)
 python -m financial_sentiment_llm.evaluate
 ```
 
-
-## Datasets
-
-- [Financial PhraseBank](https://huggingface.co/datasets/takala/financial_phrasebank) (33% weight)
-- [Twitter Financial News](https://huggingface.co/datasets/zeroshot/twitter-financial-news-sentiment) (33% weight)
-- [FiQA Sentiment](https://huggingface.co/datasets/TheFinAI/fiqa-sentiment-classification) (34% weight)
 
 ## Resources
 
