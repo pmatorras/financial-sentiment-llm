@@ -28,27 +28,41 @@ Learn LLM fine-tuning techniques by building a financial sentiment classifier, t
 See [PROJECT.md](PROJECT.md) for detailed results and roadmap.
 
 ## Quick Results
+*Phase 2 Validation (Jan 2026)*
 
+These results use a **Multi-Task Architecture** (Classification + Regression) to better handle the continuous sentiment scores in the FiQA dataset.
 | Metric | Value |
 |--------|-------|
-| Overall Accuracy | 86.0% |
-| Macro F1-Score | 0.86 |
+| Overall Accuracy | 85.0% |
+| Macro F1-Score | 0.84 |
 
 ### Performance by Dataset Source
 
 | Dataset | Accuracy | Samples | Style |
 |---------|----------|---------|-------|
-| FinancialPhraseBank | 98.88% | 624 | Professional news |
-| Twitter Financial | 78.12% | 224 | Social media |
-| FiQA Forums | 36.09% | 133 | Retail discussions ⚠️ |
+| FinancialPhraseBank | 92.1% | 343 | Professional news |
+| Twitter Financial | 81.2% | 499 | Social media |
+| FiQA Forums | 80.2% | 116 | Retail discussions|
 
 ### Performance by Sentiment Class
 
 | Class | Precision | Recall | F1-Score |
 |-------|-----------|--------|----------|
-| Negative | 0.74 | 0.96 | 0.84 |
-| Neutral | 0.95 | 0.82 | 0.88 |
-| Positive | 0.92 | 0.79 | 0.85 |
+| Negative | 0.73 | 0.87 | 0.79 |
+| Neutral | 0.88 | 0.84 | 0.86 |
+| Positive | 0.88 | 0.85 | 0.86 |
+
+## Model Architecture (Multi-Task)
+
+To address the diverse nature of financial text, we use a shared **FinBERT** backbone with two task-specific heads:
+
+1.  **Classification Head:** Predicts Negative/Neutral/Positive (Standard Cross-Entropy Loss). Used for *PhraseBank* and *Twitter*.
+2.  **Regression Head:** Predicts continuous sentiment scores (-1.0 to 1.0). Used for *FiQA*.
+
+**Why?**
+*   Standard classification throws away the nuance of "slightly negative" vs "very negative."
+*   By training on the continuous scores (Regression), the model learns a richer sentiment representation, which boosted FiQA accuracy by **15%**.
+
 
 ## Project Structure
 ```bash
@@ -121,9 +135,9 @@ python -m financial_sentiment_llm.evaluate
 
 ## Datasets
 
-- [Financial PhraseBank](https://huggingface.co/datasets/takala/financial_phrasebank) (60% weight)
-- [Twitter Financial News](https://huggingface.co/datasets/zeroshot/twitter-financial-news-sentiment) (15% weight)
-- [FiQA Sentiment](https://huggingface.co/datasets/TheFinAI/fiqa-sentiment-classification) (25% weight)
+- [Financial PhraseBank](https://huggingface.co/datasets/takala/financial_phrasebank) (33% weight)
+- [Twitter Financial News](https://huggingface.co/datasets/zeroshot/twitter-financial-news-sentiment) (33% weight)
+- [FiQA Sentiment](https://huggingface.co/datasets/TheFinAI/fiqa-sentiment-classification) (34% weight)
 
 ## Resources
 

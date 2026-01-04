@@ -87,7 +87,8 @@ positive        62        7       265
 ---
 
 ## Phase 2: Model Optimization
-**Status:** In Progress (Dec 19, 2024)
+**Status:** In Progress (Jan 04, 2026)
+> ⚠ **NOTE**: Early experiments in this section (Dec 19) contain data leakage (inflated scores). See [ Data Leakage Fix & Multi-Task Validation](#data-leakage-fix--multi-task-validation) for the first scientifically valid results.
 
 **Drop FiQA Dataset**
 - Tested training without FiQA (PhraseBank + Twitter only)
@@ -112,6 +113,25 @@ positive        62        7       265
 **Current Baseline:** FinBERT + early stopping
 - Overall: 86% | PhraseBank: 99.52% | Twitter: 78.57% | FiQA: 34.59%
 - Positive recall: 0.95 
+
+### Data Leakage Fix & Multi-Task Validation
+**Date:** Jan 03, 2026
+**Goal:** Establish valid baseline (no leakage) and validate Multi-Task hypothesis.
+
+**1. Leakage Fix:**
+- Refactored pipeline (Split → Balance) to remove duplicate samples from Test set.
+
+**2. Architecture Comparison (Post-Fix):**
+Comparing Single-Task (Classification) vs Multi-Task (Class + Regression) on the fixed data.
+
+| Model | FiQA Accuracy | Overall Accuracy | Note |
+|-------|---------------|------------------|------|
+| **Single-Task** | 65.5% | 83.0% | Struggles with continuous scores |
+| **Multi-Task** | **80.2%** | **85.0%** | **+15% on FiQA** |
+
+**Conclusion:** Multi-Task is the superior architecture.
+
+
 
 ### Potential Future Improvements
 
