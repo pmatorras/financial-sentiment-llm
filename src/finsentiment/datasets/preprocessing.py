@@ -25,6 +25,8 @@ def load_phrasebank():
     df['task_type'] = 'classification'
     df['score'] = 0.0
     df['source'] = 'phrasebank'
+    df['task_type'] = 'classification'
+    df['score'] = 0.0 # Placeholder
     return df
 
 def load_twitter():
@@ -45,6 +47,8 @@ def load_twitter():
     df['task_type'] = 'classification'
     df['score'] = 0.0
     df['source'] = 'twitter'
+    df['task_type'] = 'classification'
+    df['score'] = 0.0 # Placeholder
     return df
 
 def load_fiqa(multi_task=False):
@@ -135,7 +139,6 @@ def prepare_combined_dataset(weights=None, seed=42, multi_task=False):
                              random_state=seed)
     
     # Combine
-    #combined = pd.concat([pb_sample, tw_sample], ignore_index=True)
     combined = pd.concat([pb_sample, tw_sample, fq_sample], ignore_index=True)
     combined = combined.sample(frac=1, random_state=seed).reset_index(drop=True)
     
