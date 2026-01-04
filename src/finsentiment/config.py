@@ -28,20 +28,14 @@ PATIENCE = 2
 # Model config
 #MODEL_NAME = 'bert-base-uncased'
 MODEL_NAME = 'ProsusAI/finbert'
-MODEL_PATH = MODELS_DIR / f'sentiment_model_stop_testFiQA_{MODEL_NAME.split('/')[-1]}.pt'
 
 NUM_CLASSES = 3
 
 # Dataset weights
 DATASET_WEIGHTS = {
-    'phrasebank': 0.6,
-    'twitter': 0.15,
-    'fiqa': 0.25
-}
-DATASET_WEIGHTS_ALTERNATIVE = {
-    'phrasebank': 0.4,#0.6,
-    'twitter': 0.1,#0.15,
-    'fiqa': 0.5,#0.25
+    'phrasebank': 0.33,
+    'twitter': 0.33,
+    'fiqa': 0.34
 }
 
 # Reproducibility
@@ -57,6 +51,6 @@ def set_seed(seed=SEED):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-def get_model_path(model_type='single'):
+def get_model_path(model_type='multi'):
     """Get default model checkpoint path."""
     return MODELS_DIR / f"{model_type}_task_model.pt"
