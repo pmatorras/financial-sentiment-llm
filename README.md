@@ -6,31 +6,39 @@ Fine-tuning lightweight LLMs for financial sentiment analysis using LoRA/QLoRA.
 
 Learn LLM fine-tuning techniques by building a financial sentiment classifier, then integrate sentiment features into equity selection pipeline ([financial-ML](https://github.com/pmatorras/financial-ML)).
 
-## Tech Stack
-
-- Python 3.10+
-- HuggingFace Transformers, Datasets
-- PyTorch (with CUDA support)
-- Multi-dataset training approach
-- Future: LoRA/QLoRA for parameter-efficient fine-tuning
+**Built with**: Python 3.10 - PyTorch - Hugging Face Transformers - Pandas
 
 
 ## Current Status
-**Phase 1 Complete** - Baseline Model Established (2025-12-17)
+**Phase 2 In Progress** - Multi-Task Architecture Validated (2026-01-03)
 
-- **Test Accuracy:** 85.1%
-- **Model:** BERT fine-tuned on 3 financial sentiment datasets
-- **Key Finding:** Excellent performance on professional news (99%), challenges with forum discussions (35%)
+- **Test Accuracy:** 85.0%
+- **Model:** FinBERT with Multi-Task Head (Classification + Regression)
+- **Key Finding:** Treating FiQA scores as regression targets improved accuracy on that dataset by **+15%** (from 65% to 80%).
 
-**In Progress** - Phase 2: Model Optimization & Fine-tuning
+**Data sources**
 
+- [Financial PhraseBank](https://huggingface.co/datasets/takala/financial_phrasebank) (33% weight)
+- [Twitter Financial News](https://huggingface.co/datasets/zeroshot/twitter-financial-news-sentiment) (33% weight)
+- [FiQA Sentiment](https://huggingface.co/datasets/TheFinAI/fiqa-sentiment-classification) (34% weight)
+
+**Next Steps** - Optimize Hyperparameters & Analyze Errors
 
 See [PROJECT.md](PROJECT.md) for detailed results and roadmap.
 
-## Quick Results
-*Phase 2 Validation (Jan 2026)*
+## Model Approach \& Performance
 
-These results use a **Multi-Task Architecture** (Classification + Regression) to better handle the continuous sentiment scores in the FiQA dataset.
+To handle the diverse nature of financial text, this project implements a **Multi-Task FinBERT** architecture. Unlike standard classifiers, this model shares a BERT backbone with two task-specific heads:
+
+1. **Classification Head:** Predicts Negative/Neutral/Positive (for news/tweets).
+2. **Regression Head:** Predicts continuous sentiment scores (for FiQA).
+
+## Validation Results
+*Phase 2 (Jan 2026)*
+
+These results use a **Multi-Task Architecture** (Classification + Regression) to better handle the continuous sentiment scores in the FiQA dataset. 
+
+This architecture significantly outperformed our **Single-Task Baseline** (standard classification). By training on continuous scores (Regression), the model learns sentiment intensity, yielding a **+15%** accuracy boost on the challenging FiQA dataset.
 | Metric | Value |
 |--------|-------|
 | Overall Accuracy | 85.0% |
@@ -52,28 +60,35 @@ These results use a **Multi-Task Architecture** (Classification + Regression) to
 | Neutral | 0.88 | 0.84 | 0.86 |
 | Positive | 0.88 | 0.85 | 0.86 |
 
-## Model Architecture (Multi-Task)
+### Why this Architecture?
+- **Capturing Nuance:** Standard classification throws away the difference between "slightly negative" and "very negative." The regression head forces the model to learn this nuance.
+- **Multi-Task Loss:** We combine Cross-Entropy (for classes) and MSE (for scores) to handle diverse data formats simultaneously.
+- **Robust Training:** Includes Early Stopping (patience=3) to prevent overfitting and fixed random seeds for Reproducibility.
 
-To address the diverse nature of financial text, we use a shared **FinBERT** backbone with two task-specific heads:
-
-1.  **Classification Head:** Predicts Negative/Neutral/Positive (Standard Cross-Entropy Loss). Used for *PhraseBank* and *Twitter*.
-2.  **Regression Head:** Predicts continuous sentiment scores (-1.0 to 1.0). Used for *FiQA*.
-
-**Why?**
-*   Standard classification throws away the nuance of "slightly negative" vs "very negative."
-*   By training on the continuous scores (Regression), the model learns a richer sentiment representation, which boosted FiQA accuracy by **15%**.
 
 
 ## Project Structure
 ```bash
 ├── src/
-│ ├── config.py # Paths and hyperparameters
-│ ├── preprocessing.py # Dataset loading & preprocessing
-│ ├── dataset.py # PyTorch Dataset wrapper
-│ ├── model.py # Model architecture
-│ ├── train.py # Training loop
-│ ├── evaluate.py # Evaluation metrics
-│ └── main.py # Training entry point
+│   └── finsentiment/
+│       ├── cli/                 # Command-line interface
+│       │   ├── evaluate.py      # Eval entry point
+│       │   ├── parser.py        # Argument parsing
+│       │   └── train.py         # Training entry point
+│       ├── datasets/            # Data management
+│       │   ├── dataset_multi.py # Multi-task dataset wrapper
+│       │   ├── dataset_single.py# Single-task dataset wrapper
+│       │   └── preprocessing.py # Loading & splitting logic
+│       ├── evaluation/          # Metrics & Analysis
+│       │   └── metrics.py       # Performance calculation
+│       ├── modeling/            # Model Architectures
+│       │   ├── multi_task.py    # Classification + Regression model
+│       │   └── single_task.py   # Baseline Classification model
+│       ├── training/            # Training Loops
+│       │   ├── trainer_multi.py # Multi-task training logic
+│       │   └── trainer_single.py# Baseline training logic
+│       ├── config.py            # Global configuration
+│       └── main.py              # Application entry point
 ├── data/
 │ └── raw/ # Auto-downloaded datasets
 ├── models/ # Saved checkpoints
@@ -120,7 +135,8 @@ python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
 ### Training
 ```bash
 # Train baseline model (Downloads datasets automatically on first run, ~10MB total)
-python -m financial_sentiment_llm.main
+python -m finsentiment train # Defaults to Multi-Task architecture. Use --model-type single for baseline.
+
 ```
 **Training Time:**
 - **GPU (RTX 4050):** ~4 minutes (3 epochs)
@@ -129,15 +145,10 @@ python -m financial_sentiment_llm.main
 ### Evaluation
 ```bash
 #Evaluate trained model on test set
-python -m financial_sentiment_llm.evaluate
+python -m finsentiment evaluate # Defaults to Multi-Task architecture. Use --model-type single for baseline.
 ```
 
 
-## Datasets
-
-- [Financial PhraseBank](https://huggingface.co/datasets/takala/financial_phrasebank) (33% weight)
-- [Twitter Financial News](https://huggingface.co/datasets/zeroshot/twitter-financial-news-sentiment) (33% weight)
-- [FiQA Sentiment](https://huggingface.co/datasets/TheFinAI/fiqa-sentiment-classification) (34% weight)
 
 ## Resources
 
