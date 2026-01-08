@@ -31,5 +31,11 @@ def create_parser():
     eval_parser = subparsers.add_parser('evaluate', help='Evaluate a model')
     eval_parser.add_argument('--model-type', choices=['single', 'multi'], default='single')
     eval_parser.add_argument('--checkpoint', default=None, help='Model checkpoint')
+
+    # Analyze (New Subcommand)
+    analyze_parser = subparsers.add_parser('analyze', help='Run error analysis')
+    analyze_parser.add_argument('--type', default='false_positives', help='Analysis type to run')
+    analyze_parser.add_argument('--model-type', choices=['single', 'multi'], default='multi')
+    analyze_parser.add_argument('--checkpoint', default=None, help='Model checkpoint')
     
     return parser
