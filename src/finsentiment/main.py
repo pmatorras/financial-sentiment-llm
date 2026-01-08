@@ -1,7 +1,7 @@
 """Main execution logic for finsentiment commands."""
 
 from finsentiment.cli.parser import create_parser
-from finsentiment.cli import train, evaluate
+from finsentiment.cli import train, evaluate, analyze
 
 
 def main():
@@ -15,6 +15,8 @@ def main():
         train.execute(args)
     elif args.command == 'evaluate':
         evaluate.execute(args)
+    elif args.command == 'analyze':
+        analyze.execute(args)
     else:
         parser.print_help()
 
