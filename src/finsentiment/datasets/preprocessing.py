@@ -4,8 +4,6 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
 from finsentiment.datasets.load import (
-    #load_phrasebank,
-    #load_twitter,
     load_fiqa,
     load_any_dataset
 )
@@ -39,14 +37,12 @@ def prepare_combined_dataset(weights=None, seed=42, multi_task=False):
         weights = {'phrasebank': 0.33, 'twitter': 0.33, 'fiqa': 0.34}
 
     print("Loading datasets...")
-    #phrasebank = load_phrasebank()
-    #twitter = load_twitter()
     phrasebank = load_any_dataset(dataset_name='phrasebank', dataset_path='mteb/FinancialPhrasebankClassification', task_type='classification')
     twitter = load_any_dataset(dataset_name='twitter', dataset_path= 'zeroshot/twitter-financial-news-sentiment', task_type='classification')
 
-    fiqa = load_fiqa(multi_task=multi_task)
+    #fiqa = load_fiqa(multi_task=multi_task)
     fiqa_type = 'regression' if multi_task else 'classification'
-    #fiqa = load_any_dataset(dataset_name='fiqa', dataset_path='TheFinAI/fiqa-sentiment-classification', task_type=fiqa_type )
+    fiqa = load_any_dataset(dataset_name='fiqa', dataset_path='TheFinAI/fiqa-sentiment-classification', task_type=fiqa_type )
 
     # Sample raw data according to weights
     total_samples = 10000

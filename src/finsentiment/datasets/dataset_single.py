@@ -1,7 +1,5 @@
 """PyTorch Dataset classes."""
 
-"""PyTorch Dataset classes."""
-
 import torch
 import pandas as pd
 from torch.utils.data import Dataset
@@ -27,11 +25,6 @@ class FinancialSentimentDataset(Dataset):
         # Try to get text - adjust column name if needed
         if 'text' in row:
             text = row['text']
-        elif 'sentence' in row:  # FinancialPhraseBank uses 'sentence'
-            text = row['sentence']
-        else:
-            raise ValueError(f"No text column found. Available columns: {row.index.tolist()}")
-        
         # Convert to string and handle None/NaN
         if pd.isna(text) or text is None:
             text = ""
