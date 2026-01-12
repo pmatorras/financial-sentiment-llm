@@ -4,7 +4,7 @@ import torch.nn as nn
 from transformers import AutoModel
 from finsentiment.config import MODEL_NAME
 
-class MultiTaskSentimentModel(nn.Module):
+class FinancialSentimentModel(nn.Module):
     def __init__(self, model_name=None, num_classes=3):
         super().__init__()
         if model_name is None:

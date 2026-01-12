@@ -1,20 +1,14 @@
-"""PyTorch Dataset classes."""
+"""Multi-task dataset that handles both classification and regression."""
 
 import torch
 import pandas as pd
 from torch.utils.data import Dataset
 
-class FinancialSentimentDataset(Dataset):
-    """PyTorch dataset for financial sentiment."""
-    
+class FinancialSentimentModel(Dataset):
     def __init__(self, dataframe, tokenizer, max_length=128):
         self.data = dataframe.reset_index(drop=True)
         self.tokenizer = tokenizer
         self.max_length = max_length
-        
-        # Debug: Check what columns we have
-        print(f"Dataset columns: {self.data.columns.tolist()}")
-        print(f"First row sample: {self.data.iloc[0].to_dict()}")
     
     def __len__(self):
         return len(self.data)
@@ -22,16 +16,11 @@ class FinancialSentimentDataset(Dataset):
     def __getitem__(self, idx):
         row = self.data.iloc[idx]
         
-        # Try to get text - adjust column name if needed
-        if 'text' in row:
-            text = row['text']
-        # Convert to string and handle None/NaN
-        if pd.isna(text) or text is None:
+        # Get text
+        text = row.get('text', row.get('sentence', ''))
+        if pd.isna(text):
             text = ""
-        else:
-            text = str(text)
-        
-        label = int(row['label'])
+        text = str(text)
         
         # Tokenize
         encoding = self.tokenizer(
@@ -42,8 +31,19 @@ class FinancialSentimentDataset(Dataset):
             return_tensors='pt'
         )
         
+        # Task type and labels
+        task_type = row.get('task_type', 'classification')
+        
+        if task_type == 'regression':
+            # FiQA: use continuous score (already in [-1, 1])
+            target = torch.tensor(row['score'], dtype=torch.float)
+        else:
+            # Classification: discrete label
+            target = torch.tensor(row['label'], dtype=torch.long)
+        
         return {
             'input_ids': encoding['input_ids'].squeeze(),
             'attention_mask': encoding['attention_mask'].squeeze(),
-            'labels': torch.tensor(label, dtype=torch.long)
+            'labels': target,
+            'task_type': task_type
         }

@@ -29,11 +29,11 @@ def load_any_dataset(dataset_name='twitter', dataset_path='zeroshot/twitter-fina
     # Load from processed/
     df = pd.read_csv(raw_path)
 
-    if 'score' in df.columns: df['label'] = df['score'].apply(lambda x: 0 if x < -0.1 else (2 if x > 0.1 else 1))
-        
-
+    if 'score' in df.columns: 
+        df['label'] = df['score'].apply(lambda x: 0 if x < -0.1 else (2 if x > 0.1 else 1))
+    else:
+        df['score'] = 0.0
     df['task_type'] = task_type
-    df['score'] = 0.0
     df['source'] = dataset_name
     return df
 
