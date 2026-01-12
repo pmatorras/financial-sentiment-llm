@@ -58,7 +58,6 @@ def prepare_combined_dataset(weights=None, seed=42, multi_task=False):
                              random_state=seed)
     
     # Combine
-    #combined = pd.concat([pb_sample, tw_sample], ignore_index=True)
     combined = pd.concat([pb_sample, tw_sample, fq_sample], ignore_index=True)
     combined = combined.sample(frac=1, random_state=seed).reset_index(drop=True)
     
