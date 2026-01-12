@@ -1,93 +1,15 @@
 """Dataset loading and preprocessing utilities."""
 
 import pandas as pd
-from finsentiment.config import RAW_DATA_DIR
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
-from datasets import load_dataset
+from finsentiment.datasets.load import (
+    #load_phrasebank,
+    #load_twitter,
+    load_fiqa,
+    load_any_dataset
+)
 
-def load_phrasebank():
-    """Load Financial PhraseBank dataset."""
-    file_path = RAW_DATA_DIR / "phrasebank.csv"
-    
-    if file_path.exists():
-        # Load from local CSV
-        df = pd.read_csv(file_path)
-    else:
-        # Download from HuggingFace and save
-        print(f"Downloading Financial PhraseBank to {file_path}...")
-        dataset = load_dataset("mteb/FinancialPhrasebankClassification")
-        df = pd.DataFrame(dataset['train'])
-        RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
-        df.to_csv(file_path, index=False)
-        print(f"✓ Saved to {file_path}")
-    
-    df['task_type'] = 'classification'
-    df['score'] = 0.0
-    df['source'] = 'phrasebank'
-    return df
-
-def load_twitter():
-    
-    """Load Twitter financial sentiment dataset."""
-    file_path = RAW_DATA_DIR / "twitter.csv"
-    
-    if file_path.exists():
-        df = pd.read_csv(file_path)
-    else:
-        print(f"Downloading Twitter dataset to {file_path}...")
-        dataset = load_dataset("zeroshot/twitter-financial-news-sentiment")
-        df = pd.DataFrame(dataset['train'])
-        RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
-        df.to_csv(file_path, index=False)
-        print(f"✓ Saved to {file_path}")
-    
-    df['task_type'] = 'classification'
-    df['score'] = 0.0
-    df['source'] = 'twitter'
-    return df
-
-def load_fiqa(multi_task=False):
-    """Load FiQA dataset with continuous scores."""
-    file_path = RAW_DATA_DIR / "fiqa.csv"
-    
-    if file_path.exists():
-        df = pd.read_csv(file_path)
-    else:
-        print(f"Downloading FiQA dataset to {file_path}...")
-        dataset = load_dataset("TheFinAI/fiqa-sentiment-classification")
-        df = pd.DataFrame(dataset['train'])
-        if 'sentence' in df.columns:
-            df = df.rename(columns={'sentence': 'text'})
-        RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
-        df.to_csv(file_path, index=False)
-        print(f"✓ Saved to {file_path}")
-    
-    if multi_task:
-        df['task_type'] = 'regression'
-        if 'score' in df.columns:
-            df['label'] = df['score'].apply(lambda x: 0 if x < -0.1 else (2 if x > 0.1 else 1))
-            lower_threshold = df['score'].quantile(0.33)
-            upper_threshold = df['score'].quantile(0.67)
-            print(f"DEBUG FiQA Quantiles: 33%={lower_threshold:.4f}, 67%={upper_threshold:.4f}")
-    else:
-        df['task_type'] = 'classification'
-        # Convert continuous score to discrete label
-        if 'score' in df.columns:
-            lower_threshold = df['score'].quantile(0.33)
-            upper_threshold = df['score'].quantile(0.67)
-            def get_label(x):
-                    if x < -0.1: return 0
-                    if x > 0.1: return 2
-                    return 1
-                
-            df['label'] = df['score'].apply(get_label)
-            #df['label'] = df['score'].apply(
-            #    lambda x: 0 if x < lower_threshold else (2 if x > upper_threshold else 1)
-            #)
-    
-    df['source'] = 'fiqa'
-    return df
 
 def balance_dataset(df, target_col='label'):
     """Balance dataset classes via oversampling."""
@@ -117,10 +39,15 @@ def prepare_combined_dataset(weights=None, seed=42, multi_task=False):
         weights = {'phrasebank': 0.33, 'twitter': 0.33, 'fiqa': 0.34}
 
     print("Loading datasets...")
-    phrasebank = load_phrasebank()
-    twitter = load_twitter()
+    #phrasebank = load_phrasebank()
+    #twitter = load_twitter()
+    phrasebank = load_any_dataset(dataset_name='phrasebank', dataset_path='mteb/FinancialPhrasebankClassification', task_type='classification')
+    twitter = load_any_dataset(dataset_name='twitter', dataset_path= 'zeroshot/twitter-financial-news-sentiment', task_type='classification')
+
     fiqa = load_fiqa(multi_task=multi_task)
-    
+    fiqa_type = 'regression' if multi_task else 'classification'
+    #fiqa = load_any_dataset(dataset_name='fiqa', dataset_path='TheFinAI/fiqa-sentiment-classification', task_type=fiqa_type )
+
     # Sample raw data according to weights
     total_samples = 10000
     pb_size = int(total_samples * weights['phrasebank'])

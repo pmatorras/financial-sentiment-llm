@@ -195,3 +195,40 @@ positive         9        7       318  ← Many more correct!
 *   **Leakage Fixed:** Single-task FiQA score dropped to 65% (realistic baseline).
 *   **Hypothesis Confirmed:** Multi-task learning drastically improved FiQA performance (+15%) by respecting the continuous nature of the data.
 *   **Robustness:** The model now generalizes to complex financial text instead of just memorizing it.
+
+***
+### Data Quality Analysis & Dataset Expansion Plan
+
+**Date:** Jan 08-09, 2026
+**Goal:** Analyse model errors and investigate data quality issues
+
+**Findings:**
+
+1. **Twitter Dataset Truncation Issue**
+   - Analysis: 46.8% of tweets truncated (ending with "…")
+   - Impact: Labels may not match truncated text content
+   - Example: "Fed chairman says… https://t.co/xyz" (can't judge sentiment)
+   - Decision: Filter truncated tweets before training
+
+2. **Error Analysis Results**
+   - Created `scripts/analyze_errors.py` to identify model mistakes
+   - Generated error CSVs by misclassification type
+   - Key patterns identified:
+     - Some obvious mislabels (shootings labeled positive)
+     - Ambiguous cases (context-dependent sentiment)
+     - Incomplete sentences in PhraseBank
+
+3. **Relabeling Pipeline**
+   - Created `scripts/apply_relabels.py` for manual corrections
+   - Decision: DEFER manual relabeling until labeling criteria defined
+   - Reason: Unclear whether "positive" means market impact, emotional tone, or entity-specific
+   - Issue created to document this decision
+
+**Action Plan:**
+- Filter truncated tweets (expect ~5k usable from 9.5k original)
+- Add 1-2 diverse data sources (stock tickers, social media variants)
+- Target: Expand from 11k → 20k+ clean samples
+- Retrain baseline on expanded dataset
+- THEN implement LoRA on finalized data
+
+**Status:** Code changes in progress, baseline retrain pending
