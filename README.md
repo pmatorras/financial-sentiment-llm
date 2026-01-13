@@ -15,6 +15,7 @@ Learn LLM fine-tuning techniques by building a financial sentiment classifier, t
 - **Test Accuracy:** 85.0%
 - **Model:** FinBERT with Multi-Task Head (Classification + Regression)
 - **Key Finding:** Treating FiQA scores as regression targets improved accuracy on that dataset by **+15%** (from 65% to 80%).
+- **Data cleaning:** Several cleaning/filtering steps were tested, but did not consistently improve accuracy when training/testing on the same distribution; cleaning remains available via flags but is disabled by default (see [EXPERIMENTS.md](EXPERIMENTS.md)).
 
 **Data sources**
 
@@ -64,6 +65,7 @@ This architecture significantly outperformed our **Single-Task Baseline** (stand
 - **Capturing Nuance:** Standard classification throws away the difference between "slightly negative" and "very negative." The regression head forces the model to learn this nuance.
 - **Multi-Task Loss:** We combine Cross-Entropy (for classes) and MSE (for scores) to handle diverse data formats simultaneously.
 - **Robust Training:** Includes Early Stopping (patience=3) to prevent overfitting and fixed random seeds for Reproducibility.
+- **Loss weighting:** Multi-task loss uses Cross-Entropy (classification) + weighted MSE (regression); defaults are rescaled to `1/10` for implementation convenience while preserving the original 1:10 ratio.
 
 
 
@@ -71,24 +73,28 @@ This architecture significantly outperformed our **Single-Task Baseline** (stand
 ```bash
 ├── src/
 │   └── finsentiment/
-│       ├── cli/                 # Command-line interface
-│       │   ├── evaluate.py      # Eval entry point
-│       │   ├── parser.py        # Argument parsing
-│       │   └── train.py         # Training entry point
-│       ├── datasets/            # Data management
-│       │   ├── dataset_multi.py # Multi-task dataset wrapper
-│       │   ├── dataset_single.py# Single-task dataset wrapper
-│       │   └── preprocessing.py # Loading & splitting logic
-│       ├── evaluation/          # Metrics & Analysis
-│       │   └── metrics.py       # Performance calculation
-│       ├── modeling/            # Model Architectures
-│       │   ├── multi_task.py    # Classification + Regression model
-│       │   └── single_task.py   # Baseline Classification model
-│       ├── training/            # Training Loops
-│       │   ├── trainer_multi.py # Multi-task training logic
-│       │   └── trainer_single.py# Baseline training logic
-│       ├── config.py            # Global configuration
-│       └── main.py              # Application entry point
+│       ├── cli/                  # CLI entrypoints
+│       │   ├── train.py
+│       │   ├── evaluate.py
+│       │   └── parser.py
+│       ├── datasets/             # Data loading + splitting + dataset class
+│       │   ├── __init__.py
+│       │   ├── load.py           # Download/load HF datasets → pandas
+│       │   ├── preprocessing.py  # Split / balance / combine datasets
+│       │   ├── sentiment.py      # Dataset wrapper (task_type-aware)
+│       │   └── clean_data.py     # Optional cleaning utilities (default OFF)
+│       ├── modeling/             # Model definition(s)
+│       │   ├── __init__.py
+│       │   └── bert.py           # FinancialSentimentModel (cls + reg heads)
+│       ├── training/             # Training loop(s)
+│       │   ├── __init__.py
+│       │   └── trainer.py
+│       ├── evaluation/           # Metrics
+│       │   ├── __init__.py
+│       │   └── metrics.py
+│       ├── config.py             # Global configuration
+│       ├── main.py               # Application entry point
+│       └── __main__.py           # python -m finsentiment
 ├── data/
 │ └── raw/ # Auto-downloaded datasets
 ├── models/ # Saved checkpoints
@@ -96,7 +102,7 @@ This architecture significantly outperformed our **Single-Task Baseline** (stand
 ├── PROJECT.md # Detailed roadmap & progress
 └── README.md # This file
 ```
-
+> **Note**: the codebase is now organized as a unified pipeline (multi-task capable), rather than maintaining parallel “single vs multi” modules.
 
 ## Installation
 
@@ -135,7 +141,7 @@ python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
 ### Training
 ```bash
 # Train baseline model (Downloads datasets automatically on first run, ~10MB total)
-python -m finsentiment train # Defaults to Multi-Task architecture. Use --model-type single for baseline.
+python -m finsentiment train # Defaults to Multi-Task architecture. Use --model-type multi for baseline.
 
 ```
 **Training Time:**
@@ -145,7 +151,7 @@ python -m finsentiment train # Defaults to Multi-Task architecture. Use --model-
 ### Evaluation
 ```bash
 #Evaluate trained model on test set
-python -m finsentiment evaluate # Defaults to Multi-Task architecture. Use --model-type single for baseline.
+python -m finsentiment evaluate # Defaults to Multi-Task architecture. Use --model-type multi for baseline.
 ```
 
 

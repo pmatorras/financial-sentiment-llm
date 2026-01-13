@@ -131,6 +131,15 @@ Comparing Single-Task (Classification) vs Multi-Task (Class + Regression) on the
 
 **Conclusion:** Multi-Task is the superior architecture.
 
+**Loss weighting (implementation detail):**
+- Multi-task objective: `classification_weight * CrossEntropy + regression_weight * MSE`.
+- Original validated baseline used `0.5 / 5.0`.  
+- Defaults moved to `classification_weight=1.0`, `regression_weight=10.0` primarily for implementation simplicity when running the unified “classification-only” path (so classification uses the standard scaling without needing special-case logic), while preserving the same loss ratio. Retraining showed comparable evaluation metrics.
+
+
+> **Data cleaning note:** Cleaning/filters were evaluated but did not consistently improve accuracy when training and testing on the same distribution, so cleaning remains available via flags but is disabled by default. (See [EXPERIMENTS.md](EXPERIMENTS.md).)
+
+
 
 
 ### Potential Future Improvements
