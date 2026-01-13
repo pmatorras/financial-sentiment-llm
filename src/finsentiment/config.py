@@ -47,6 +47,11 @@ DATASET_WEIGHTS_ALTERNATIVE = {
 # Reproducibility
 SEED = 42
 
+# Default to False: Experiments showed aggressive cleaning (removing short text)
+# artificially inflated metrics on subsets but did not improve generalization
+# on the full test set.
+CLEAN_DATA_DEFAULT = False 
+
 def set_seed(seed=SEED):
     """Set seed for reproducibility."""
     random.seed(seed)
