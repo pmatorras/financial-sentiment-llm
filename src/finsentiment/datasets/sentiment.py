@@ -4,7 +4,7 @@ import torch
 import pandas as pd
 from torch.utils.data import Dataset
 
-class MultiTaskDataset(Dataset):
+class FinancialSentimentDataset(Dataset):
     def __init__(self, dataframe, tokenizer, max_length=128):
         self.data = dataframe.reset_index(drop=True)
         self.tokenizer = tokenizer

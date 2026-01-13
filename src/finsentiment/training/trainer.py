@@ -3,11 +3,8 @@
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-from pathlib import Path
 
-def train_multi_task_model(model, train_loader, val_loader, device='cuda', 
-                           epochs=5, lr=2e-5, patience=3, 
-                           classification_weight=0.5, regression_weight=5, save_path=None):
+def train_multi_task_model(model, train_loader, val_loader, device='cuda',  epochs=5, lr=2e-5, patience=3, classification_weight=1.0, regression_weight=10.0, save_path=None):
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
     classification_loss_fn = nn.CrossEntropyLoss()
     regression_loss_fn = nn.MSELoss()

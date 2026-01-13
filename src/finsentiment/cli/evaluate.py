@@ -8,8 +8,8 @@ from finsentiment.config import MODEL_NAME, BATCH_SIZE, get_model_path
 from finsentiment.datasets.preprocessing import prepare_combined_dataset
 from finsentiment.evaluation.metrics import evaluate_model, print_evaluation_results
 
-from finsentiment.datasets import get_dataset_class
-from finsentiment.modeling import get_model_class
+from finsentiment.datasets import FinancialSentimentDataset
+from finsentiment.modeling import FinancialSentimentModel
 
 def execute(args):
     """
@@ -32,16 +32,14 @@ def execute(args):
     
     # Setup tokenizer and dataset
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    DatasetClass = get_dataset_class(multi_task=is_multi_task)
-    test_dataset = DatasetClass(test_df, tokenizer)
+    test_dataset = FinancialSentimentDataset(test_df, tokenizer)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
 
     checkpoint_path = args.checkpoint or get_model_path(args.model_type)
 
     # Load model
     print(f"Loading model from: {checkpoint_path}")
-    ModelClass = get_model_class(multi_task=is_multi_task)
-    model = ModelClass()
+    model = FinancialSentimentModel()
     model.load_state_dict(torch.load(checkpoint_path, weights_only=True))
     
     device = 'cuda' if torch.cuda.is_available() else 'cpu'

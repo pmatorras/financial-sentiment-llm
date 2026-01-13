@@ -7,7 +7,7 @@ While the accuracy on FiQA remained low (36%), the PhraseBank/Twitter scores may
 See [Multi-Task Learning & Data Leakage Fix](#multi-task-learning--data-leakage-fix) section for the corrected baseline.
 
 ### Drop FiQA Dataset
-**Date:** Dec 19, 2024
+**Date:** Dec 19, 2024 \
 **Goal:** Test if FiQA is hurting overall performance
 
 **Configuration:**
@@ -25,7 +25,7 @@ Twitter: 73.95% (238 samples)
 
 ### Increase FiQA Weight (0.4/0.1/0.5)
 
-**Date:** Dec 19, 2024
+**Date:** Dec 19, 2024 \
 **Goal:** Give FiQA more exposure in training
 
 **Configuration:**
@@ -90,7 +90,7 @@ Confusion Matrix: [IDENTICAL to Exp 2.2]
 
 ### Early Stopping Implementation
 
-**Date:** Dec 19, 2024
+**Date:** Dec 19, 2024 \
 **Goal:** Prevent overfitting, improve training efficiency
 
 **Implementation:**
@@ -195,3 +195,38 @@ positive         9        7       318  ← Many more correct!
 *   **Leakage Fixed:** Single-task FiQA score dropped to 65% (realistic baseline).
 *   **Hypothesis Confirmed:** Multi-task learning drastically improved FiQA performance (+15%) by respecting the continuous nature of the data.
 *   **Robustness:** The model now generalizes to complex financial text instead of just memorizing it.
+
+
+***
+### Data cleaning ablation (clean vs not-clean)
+
+**Date:** Jan 12, 2026 \
+**Goal:** Verify whether dataset “cleaning” (e.g., filtering short texts) improves real generalization, vs. just changing the evaluation distribution.
+
+**Setup (important):**
+
+- Two dataset “recipes” were used:
+    - **Unclean**: full dataset (no filtering).
+    - **Clean**: filtered dataset (e.g., short/noisy items removed).
+- Key lesson: results can look better/worse depending on whether the **model was evaluated on the same recipe it was trained on** (matched distribution) vs. on a filtered subset (mismatched distribution).
+
+**Results (multi-task evaluation):**
+
+
+| Train recipe | Test recipe | Overall acc | PhraseBank | Twitter | FiQA | Test N |
+| :-- | :-- | --: | --: | --: | --: | --: |
+| Clean | Clean | 0.85 | 94.87% | 78.69% | 80.81% | 952 |
+| Unclean | Clean | 0.85 | 96.58% | 76.49% | 89.90% | 952 |
+| Unclean | Unclean | 0.84 | 92.42% | 80.16% | 79.31% | 958 |
+
+**Interpretation:**
+
+- The “Unclean → Clean” jump on FiQA (89.90%) is likely a **subset effect**: the cleaned test set is not the same distribution as the full unclean test set, and appears easier (or at least different).
+- When comparing matched distributions (Clean→Clean vs Unclean→Unclean), cleaning does **not** deliver a clear, reliable improvement (0.85 vs 0.84 overall; FiQA ~80 either way).
+- Conclusion: data cleaning here risks “chasing shadows” (changing which examples exist) rather than improving the model.
+
+**Decision:**
+
+- Keep the cleaning utilities/flags for reproducibility and future targeted filtering, but default them to **off** (not used in the main pipeline), since no consistent improvement was observed on matched train/test distributions.
+
+***
