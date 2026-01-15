@@ -1,6 +1,6 @@
 # Financial Sentiment LLM
 
-Fine-tuning lightweight LLMs for financial sentiment analysis using LoRA/QLoRA.
+Fine-tuning lightweight LLMs for financial sentiment analysis using FinBERT.
 
 ## Project Goal
 
