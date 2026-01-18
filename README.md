@@ -1,3 +1,13 @@
+---
+title: Financial Sentiment Demo
+emoji: 🏃
+colorFrom: yellow
+colorTo: yellow
+sdk: docker
+pinned: false
+app_port: 7860
+---
+
 # Financial Sentiment LLM
 
 Fine-tuning lightweight LLMs for financial sentiment analysis using LoRA/QLoRA.

@@ -10,6 +10,10 @@ venv/
 *.egg-info
 *.log
 
+# Gradio cache (local only)
+.gradio/
+.gradio-cache/
+
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb_checkpoints
