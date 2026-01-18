@@ -19,7 +19,8 @@ venv/
 *.ipynb_checkpoints
 
 # Models and data
-models/
+models/*
+!models/.gitkeep
 data/
 
 !data/sample_*.csv
