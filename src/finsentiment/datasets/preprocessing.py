@@ -50,14 +50,20 @@ def prepare_combined_dataset(weights=None, seed=42, multi_task=False, clean_data
             task_type=task,
             clean_data=clean_data
         )
-    
-    # Sample raw data according to weights
-    total_samples = 10000
+
     samples = []
+    # For each source, compute max samples we could draw given its weight
+    max_per_source = {name: len(loaded_dfs[name]) / weights[name] for name in weights}
+    for name, df in loaded_dfs.items():
+        print(f"{name}: {len(df)} rows available, weight={weights[name]}, can support total={(len(df) / weights[name]):.0f}")
+    # The bottleneck determines total_samples
+    total_samples = int(min(max_per_source.values()))
+
+    # Now sample each source proportionally
     for name, weight in weights.items():
         size = int(total_samples * weight)
         df = loaded_dfs[name]
-        sampled = df.sample(n=min(size, len(df)), random_state=seed)
+        sampled = df.sample(n=size, random_state=seed)  # no min() needed anymore
         samples.append(sampled)
         
     # Combine
