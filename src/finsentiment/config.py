@@ -28,7 +28,7 @@ PATIENCE = 2
 # Model config
 #MODEL_NAME = 'bert-base-uncased'
 MODEL_NAME = 'ProsusAI/finbert'
-MODEL_PATH = MODELS_DIR / f'sentiment_model_stop_testFiQA_{MODEL_NAME.split('/')[-1]}.pt'
+MODEL_PATH = MODELS_DIR / f'sentiment_model_stop_testFiQA_{MODEL_NAME.split("/")[-1]}.pt'
 
 NUM_CLASSES = 3
 

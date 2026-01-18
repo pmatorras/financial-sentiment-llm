@@ -3,10 +3,8 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
-from finsentiment.datasets.load import (
-    load_any_dataset
-)
-
+from finsentiment.datasets.load import load_any_dataset
+from finsentiment.datasets.registry import DATASET_REGISTRY
 
 def balance_dataset(df, target_col='label'):
     """Balance dataset classes via oversampling."""
@@ -32,30 +30,46 @@ def prepare_combined_dataset(weights=None, seed=42, multi_task=False, clean_data
     Returns train/val/test splits.
     """
     if weights is None:
-        #weights = {'phrasebank': 0.0, 'twitter': 0.0, 'fiqa': 1.0}
-        weights = {'phrasebank': 0.33, 'twitter': 0.33, 'fiqa': 0.34}
+        weights = {src['name']: src['relative_weight'] for src in DATASET_REGISTRY}
+        total_weight = sum(weights.values())
+        weights = {k: v / total_weight for k, v in weights.items()}
 
     print("Loading datasets...")
-    phrasebank = load_any_dataset(dataset_name='phrasebank', dataset_path='mteb/FinancialPhrasebankClassification', task_type='classification', clean_data=clean_data)
-    twitter = load_any_dataset(dataset_name='twitter', dataset_path= 'zeroshot/twitter-financial-news-sentiment', task_type='classification', clean_data=clean_data)
 
-    fiqa_type = 'regression' if multi_task else 'classification'
-    fiqa = load_any_dataset(dataset_name='fiqa', dataset_path='TheFinAI/fiqa-sentiment-classification', task_type=fiqa_type, clean_data=clean_data)
+    # Load all sources via registry
+    loaded_dfs = {}
+    for src in DATASET_REGISTRY:
+        task = src['task_type']
+        # Special case: fiqa switches based on multi_task flag
+        if src['name'] == 'fiqa':
+            task = 'regression' if multi_task else 'classification'
+        
+        loaded_dfs[src['name']] = load_any_dataset(
+            dataset_name=src['name'],
+            dataset_path=src['hf_path'],
+            task_type=task,
+            clean_data=clean_data
+        )
 
-    # Sample raw data according to weights
-    total_samples = 10000
-    pb_size = int(total_samples * weights['phrasebank'])
-    tw_size = int(total_samples * weights['twitter'])
-    fq_size = int(total_samples * weights['fiqa'])
-    
-    pb_sample = phrasebank.sample(n=min(pb_size, len(phrasebank)), random_state=seed)
-    tw_sample = twitter.sample(n=min(tw_size, len(twitter)), random_state=seed)
-    fq_sample = fiqa.sample(n=min(fq_size, len(fiqa)), random_state=seed)
-    
+    samples = []
+    # For each source, compute max samples we could draw given its weight
+    max_per_source = {name: len(loaded_dfs[name]) / weights[name] for name in weights}
+    for name, df in loaded_dfs.items():
+        print(f"{name}: {len(df)} rows available, weight={weights[name]}, can support total={(len(df) / weights[name]):.0f}")
+    # The bottleneck determines total_samples
+    total_samples = int(min(max_per_source.values()))
+
+    # Now sample each source proportionally
+    for name, weight in weights.items():
+        size = int(total_samples * weight)
+        df = loaded_dfs[name]
+        sampled = df.sample(n=size, random_state=seed)  # no min() needed anymore
+        samples.append(sampled)
+        
     # Combine
-    combined = pd.concat([pb_sample, tw_sample, fq_sample], ignore_index=True)
+    combined = pd.concat(samples, ignore_index=True)
     combined = combined.sample(frac=1, random_state=seed).reset_index(drop=True)
-    
+
     # Split
     train_df, temp_df = train_test_split(combined, test_size=0.3, random_state=seed, stratify=combined['label'])
     val_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=seed, stratify=temp_df['label'])
