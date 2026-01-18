@@ -20,7 +20,7 @@ venv/
 
 # Models and data
 models/*
-!models/.gitkeep
+!models/info.md
 data/
 
 !data/sample_*.csv
