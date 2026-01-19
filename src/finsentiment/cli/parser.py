@@ -16,7 +16,7 @@ def create_parser():
     # Global arguments
     parser.add_argument('--verbose', action='store_true', help='Verbose output')
     parser.add_argument('--device', choices=['cpu', 'cuda'], help='Device to use')
-    
+    parser.add_argument("-d", "--debug", action="store_true", help="Verbose debug logging")
     # Subcommands
     subparsers = parser.add_subparsers(dest='command', required=True)
     
@@ -29,7 +29,7 @@ def create_parser():
     
     # Evaluate
     eval_parser = subparsers.add_parser('evaluate', help='Evaluate a model')
-    eval_parser.add_argument('--model-type', choices=['single', 'multi'], default='single')
+    eval_parser.add_argument('--model-type', choices=['single', 'multi'], default='multi')
     eval_parser.add_argument('--checkpoint', default=None, help='Model checkpoint')
     
     return parser

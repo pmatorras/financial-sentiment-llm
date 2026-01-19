@@ -38,12 +38,13 @@ def prepare_combined_dataset(weights=None, seed=42, multi_task=False, clean_data
 
     # Load all sources via registry
     loaded_dfs = {}
+    source_tasks = {}
     for src in DATASET_REGISTRY:
         task = src['task_type']
         # Special case: fiqa switches based on multi_task flag
         if src['name'] == 'fiqa':
             task = 'regression' if multi_task else 'classification'
-        
+        source_tasks[src['name']] = task
         loaded_dfs[src['name']] = load_any_dataset(
             dataset_name=src['name'],
             dataset_path=src['hf_path'],
@@ -52,19 +53,41 @@ def prepare_combined_dataset(weights=None, seed=42, multi_task=False, clean_data
         )
 
     samples = []
-    # For each source, compute max samples we could draw given its weight
-    max_per_source = {name: len(loaded_dfs[name]) / weights[name] for name in weights}
-    for name, df in loaded_dfs.items():
-        print(f"{name}: {len(df)} rows available, weight={weights[name]}, can support total={(len(df) / weights[name]):.0f}")
-    # The bottleneck determines total_samples
-    total_samples = int(min(max_per_source.values()))
+    # Split sources by task type
+    cls_sources = [n for n, t in source_tasks.items() if t == 'classification']
+    reg_sources= [n for n, t in source_tasks.items() if t == 'regression']
 
-    # Now sample each source proportionally
-    for name, weight in weights.items():
-        size = int(total_samples * weight)
-        df = loaded_dfs[name]
-        sampled = df.sample(n=size, random_state=seed)  # no min() needed anymore
-        samples.append(sampled)
+    # --- Pipeline 1: Classification ---
+    if cls_sources:
+        # Re-normalize weights for just these sources
+        cls_sub_weights = {k: weights[k] for k in cls_sources}
+        total_cls_weight = sum(cls_sub_weights.values())
+        
+        # Calculate limit based on weakest link
+        cls_maxes = [len(loaded_dfs[k]) / (cls_sub_weights[k]/total_cls_weight) for k in cls_sources]
+        cls_limit = int(min(cls_maxes))
+        
+        for name in cls_sources:
+            # Calculate proportion relative to this group
+            relative_w = cls_sub_weights[name] / total_cls_weight
+            size = int(cls_limit * relative_w)
+            samples.append(loaded_dfs[name].sample(n=size, random_state=seed))
+            print(f"  > Classification ({name}): {size} samples")
+
+    # --- Pipeline 2: Regression ---
+    if reg_sources:
+        # Same logic for regression group
+        reg_sub_weights = {k: weights[k] for k in reg_sources}
+        total_reg_weight = sum(reg_sub_weights.values())
+        
+        reg_maxes = [len(loaded_dfs[k]) / (reg_sub_weights[k]/total_reg_weight) for k in reg_sources]
+        reg_limit = int(min(reg_maxes))
+        
+        for name in reg_sources:
+            relative_w = reg_sub_weights[name] / total_reg_weight
+            size = int(reg_limit * relative_w)
+            samples.append(loaded_dfs[name].sample(n=size, random_state=seed))
+            print(f"  > Regression ({name}):     {size} samples")
         
     # Combine
     combined = pd.concat(samples, ignore_index=True)
