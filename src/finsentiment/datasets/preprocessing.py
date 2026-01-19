@@ -51,6 +51,17 @@ def prepare_combined_dataset(weights=None, seed=42, multi_task=False, clean_data
             task_type=task,
             clean_data=clean_data
         )
+    # Split each source into train/val/test BEFORE sampling (for consistency across tests)
+    train_pool = {}
+    val_pool = {}
+    test_pool = {}
+    
+    for name, df in loaded_dfs.items():
+        train_df, temp_df = train_test_split(df, test_size=0.3, random_state=seed, stratify=df['label'])
+        val_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=seed, stratify=temp_df['label'])
+        train_pool[name] = train_df
+        val_pool[name] = val_df
+        test_pool[name] = test_df
 
     samples = []
     # Split sources by task type
@@ -64,14 +75,14 @@ def prepare_combined_dataset(weights=None, seed=42, multi_task=False, clean_data
         total_cls_weight = sum(cls_sub_weights.values())
         
         # Calculate limit based on weakest link
-        cls_maxes = [len(loaded_dfs[k]) / (cls_sub_weights[k]/total_cls_weight) for k in cls_sources]
+        cls_maxes = [len(train_pool[k]) / (cls_sub_weights[k]/total_cls_weight) for k in cls_sources]
         cls_limit = int(min(cls_maxes))
         
         for name in cls_sources:
             # Calculate proportion relative to this group
             relative_w = cls_sub_weights[name] / total_cls_weight
             size = int(cls_limit * relative_w)
-            samples.append(loaded_dfs[name].sample(n=size, random_state=seed))
+            samples.append(train_pool[name].sample(n=size, random_state=seed))
             print(f"  > Classification ({name}): {size} samples")
 
     # --- Pipeline 2: Regression ---
@@ -80,25 +91,25 @@ def prepare_combined_dataset(weights=None, seed=42, multi_task=False, clean_data
         reg_sub_weights = {k: weights[k] for k in reg_sources}
         total_reg_weight = sum(reg_sub_weights.values())
         
-        reg_maxes = [len(loaded_dfs[k]) / (reg_sub_weights[k]/total_reg_weight) for k in reg_sources]
+        reg_maxes = [len(train_pool[k]) / (reg_sub_weights[k]/total_reg_weight) for k in reg_sources]
         reg_limit = int(min(reg_maxes))
         
         for name in reg_sources:
             relative_w = reg_sub_weights[name] / total_reg_weight
             size = int(reg_limit * relative_w)
-            samples.append(loaded_dfs[name].sample(n=size, random_state=seed))
+            samples.append(train_pool[name].sample(n=size, random_state=seed))
             print(f"  > Regression ({name}):     {size} samples")
         
-    # Combine
-    combined = pd.concat(samples, ignore_index=True)
-    combined = combined.sample(frac=1, random_state=seed).reset_index(drop=True)
+    # Combine sampled train data
+    train_df = pd.concat(samples, ignore_index=True).sample(frac=1, random_state=seed).reset_index(drop=True)
 
-    # Split
-    train_df, temp_df = train_test_split(combined, test_size=0.3, random_state=seed, stratify=combined['label'])
-    val_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=seed, stratify=temp_df['label'])
+    # Combine full val/test pools
+    val_df = pd.concat(val_pool.values(), ignore_index=True).sample(frac=1, random_state=seed).reset_index(drop=True)
+    test_df = pd.concat(test_pool.values(), ignore_index=True).sample(frac=1, random_state=seed).reset_index(drop=True)
+
     
     print("Balancing datasets...")
-    train_df = balance_dataset(train_df)
+    #train_df = balance_dataset(train_df)
     
     # Clean up - keep only necessary columns
     required_cols = ['text', 'label', 'source']
@@ -106,7 +117,7 @@ def prepare_combined_dataset(weights=None, seed=42, multi_task=False, clean_data
         required_cols.extend(['score', 'task_type'])
         
     # Add continuous_score if it exists and has values
-    if 'continuous_score' in combined.columns and combined['continuous_score'].notna().any():
+    if 'continuous_score' in train_df.columns and train_df['continuous_score'].notna().any():
         required_cols.append('continuous_score')
     
     train_df = train_df[required_cols].copy()
