@@ -107,5 +107,32 @@ def print_evaluation_results(labels, predictions, test_df):
     for source in ['phrasebank', 'twitter', 'fiqa']:
         source_df = test_df[test_df['source'] == source]
         if len(source_df) > 0:
+            # Overall accuracy for this source
             accuracy = (source_df['prediction'] == source_df['label']).mean()
-            print(f"{source.capitalize():12s}: {accuracy:.2%} ({len(source_df)} samples)")
+            
+            # Per-class metrics for this source
+            source_labels = source_df['label'].values
+            source_preds = source_df['prediction'].values
+            
+            print(f"\n{source.upper()} ({len(source_df)} samples) - Overall: {accuracy:.2%}")
+            
+            # Generate classification report just for this source
+            try:
+                report = classification_report(
+                    source_labels, 
+                    source_preds, 
+                    target_names=label_names,
+                    output_dict=True,
+                    zero_division=0
+                )
+                
+                # Print per-class breakdown
+                print(f"  Class Breakdown:")
+                for label in label_names:
+                    if label in report:
+                        metrics = report[label]
+                        support = int(metrics['support'])
+                        print(f"    {label:8s}: P={metrics['precision']:.2f} R={metrics['recall']:.2f} F1={metrics['f1-score']:.2f} (n={support})")
+                        
+            except Exception as e:
+                print(f"  Could not generate detailed metrics: {e}")

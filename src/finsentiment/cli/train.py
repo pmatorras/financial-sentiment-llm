@@ -66,6 +66,7 @@ def execute(args):
         epochs=args.epochs,
         lr=args.lr,
         patience=PATIENCE,
+        debug=args.debug
     )
     
     # Save model

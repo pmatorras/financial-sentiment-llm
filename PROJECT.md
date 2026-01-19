@@ -87,7 +87,7 @@ positive        62        7       265
 ---
 
 ## Phase 2: Model Optimization
-**Status:** In Progress (Jan 04, 2026)
+**Status:** In Progress (Jan 19, 2026)
 > ⚠ **NOTE**: Early experiments in this section (Dec 19) contain data leakage (inflated scores). See [ Data Leakage Fix & Multi-Task Validation](#data-leakage-fix--multi-task-validation) for the first scientifically valid results.
 
 **Drop FiQA Dataset**
@@ -138,6 +138,14 @@ Comparing Single-Task (Classification) vs Multi-Task (Class + Regression) on the
 
 
 > **Data cleaning note:** Cleaning/filters were evaluated but did not consistently improve accuracy when training and testing on the same distribution, so cleaning remains available via flags but is disabled by default. (See [EXPERIMENTS.md](EXPERIMENTS.md).)
+
+**Data Pipeline Refactoring (Issue #26)**
+- Refactored sampling logic to enforce explicit dataset weights
+- Discovered and fixed bottleneck in weight enforcement that limited training data
+- Established fixed train/test splits (prevents evaluation variance across experiments)
+- Validated optimal configuration: 2:1 Twitter/PhraseBank ratio, no class balancing
+- Result: Maintains 85% accuracy with scientifically rigorous methodology
+> See [EXPERIMENTS.md](EXPERIMENTS.md#dataset-weighting-and-pipeline-refactoring) for detailed information.
 
 
 

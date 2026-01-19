@@ -12,6 +12,8 @@ app_port: 7860
 
 Fine-tuning lightweight LLMs for financial sentiment analysis using FinBERT.
 
+**🚀 [Try Live Demo](https://huggingface.co/spaces/pmatorras/financial-sentiment-demo)** - Test the model on real financial text
+
 ## Project Goal
 
 Learn LLM fine-tuning techniques by building a financial sentiment classifier, then integrate sentiment features into equity selection pipeline ([financial-ML](https://github.com/pmatorras/financial-ML)).
@@ -29,11 +31,13 @@ Learn LLM fine-tuning techniques by building a financial sentiment classifier, t
 
 **Data sources**
 
-- [Financial PhraseBank](https://huggingface.co/datasets/takala/financial_phrasebank) (33% weight)
-- [Twitter Financial News](https://huggingface.co/datasets/zeroshot/twitter-financial-news-sentiment) (33% weight)
-- [FiQA Sentiment](https://huggingface.co/datasets/TheFinAI/fiqa-sentiment-classification) (34% weight)
+- [Financial PhraseBank](https://huggingface.co/datasets/takala/financial_phrasebank) (Professional news)
+- [Twitter Financial News](https://huggingface.co/datasets/zeroshot/twitter-financial-news-sentiment) (Social media)
+- [FiQA Sentiment](https://huggingface.co/datasets/TheFinAI/fiqa-sentiment-classification) (Forum discussions)
 
-**Next Steps** - Optimize Hyperparameters & Analyze Errors
+> ***Note**: Training uses 2:1 Twitter/PhraseBank ratio with decoupled sampling. See [EXPERIMENTS.md](EXPERIMENTS.md) for methodology.*
+
+**Next Steps** - LoRA Implementation & Inference Optimization
 
 See [PROJECT.md](PROJECT.md) for detailed results and roadmap.
 
@@ -59,17 +63,17 @@ This architecture significantly outperformed our **Single-Task Baseline** (stand
 
 | Dataset | Accuracy | Samples | Style |
 |---------|----------|---------|-------|
-| FinancialPhraseBank | 92.1% | 343 | Professional news |
-| Twitter Financial | 81.2% | 499 | Social media |
-| FiQA Forums | 80.2% | 116 | Retail discussions|
+| FinancialPhraseBank | 95.6% | 340 | Professional news |
+| Twitter Financial | 82.8% | 1,432 | Social media |
+| FiQA Forums | 76.6% | 124 | Retail discussions|
 
 ### Performance by Sentiment Class
 
 | Class | Precision | Recall | F1-Score |
 |-------|-----------|--------|----------|
-| Negative | 0.73 | 0.87 | 0.79 |
-| Neutral | 0.88 | 0.84 | 0.86 |
-| Positive | 0.88 | 0.85 | 0.86 |
+| Negative | 0.74 | 0.82 | 0.78 |
+| Neutral | 0.87 | 0.76 | 0.81 |
+| Positive | 0.87 | 0.90 | 0.88 |
 
 ### Why this Architecture?
 - **Capturing Nuance:** Standard classification throws away the difference between "slightly negative" and "very negative." The regression head forces the model to learn this nuance.
@@ -91,6 +95,7 @@ This architecture significantly outperformed our **Single-Task Baseline** (stand
 │       │   ├── __init__.py
 │       │   ├── load.py           # Download/load HF datasets → pandas
 │       │   ├── preprocessing.py  # Split / balance / combine datasets
+│       │   ├── registry.py       # List of datasets used with weights
 │       │   ├── sentiment.py      # Dataset wrapper (task_type-aware)
 │       │   └── clean_data.py     # Optional cleaning utilities (default OFF)
 │       ├── modeling/             # Model definition(s)
@@ -112,7 +117,7 @@ This architecture significantly outperformed our **Single-Task Baseline** (stand
 ├── PROJECT.md # Detailed roadmap & progress
 └── README.md # This file
 ```
-> **Note**: the codebase is now organized as a unified pipeline (multi-task capable), rather than maintaining parallel “single vs multi” modules.
+> **Note**: the codebase is organized as a unified pipeline (multi-task capable), rather than maintaining parallel "single vs multi" modules.
 
 ## Installation
 

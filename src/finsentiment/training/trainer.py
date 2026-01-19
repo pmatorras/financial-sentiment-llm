@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 
-def train_multi_task_model(model, train_loader, val_loader, device='cuda',  epochs=5, lr=2e-5, patience=3, classification_weight=1.0, regression_weight=10.0, save_path=None):
+def train_multi_task_model(model, train_loader, val_loader, device='cuda',  epochs=5, lr=2e-5, patience=3, classification_weight=1.0, regression_weight=10.0, save_path=None, debug=False):
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
     classification_loss_fn = nn.CrossEntropyLoss()
     regression_loss_fn = nn.MSELoss()
@@ -48,8 +48,9 @@ def train_multi_task_model(model, train_loader, val_loader, device='cuda',  epoc
                 
                 # ADD THIS BLOCK ===
                 if epoch == 0 and train_reg_batches == 0:
-                     print(f"\nDEBUG: First batch regression targets: {reg_targets[:10].tolist()}")
-                     print(f"DEBUG: First batch regression preds:   {reg_preds[:10].detach().cpu().tolist()}")
+                     if debug:
+                        print(f"\nDEBUG: First batch regression targets: {reg_targets[:10].tolist()}")
+                        print(f"DEBUG: First batch regression preds:   {reg_preds[:10].detach().cpu().tolist()}")
                 # Cast to Float for MSE
                 reg_loss = regression_loss_fn(reg_preds, targets[reg_mask].float())
                 total_loss += regression_weight * reg_loss
