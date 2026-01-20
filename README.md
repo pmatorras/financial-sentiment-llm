@@ -26,8 +26,10 @@ Learn LLM fine-tuning techniques by building a financial sentiment classifier, t
 
 - **Test Accuracy:** 85.0%
 - **Model:** FinBERT with Multi-Task Head (Classification + Regression)
-- **Key Finding:** Treating FiQA scores as regression targets improved accuracy on that dataset by **+15%** (from 65% to 80%).
+    - Benchmarked FinBERT vs BERT-Base vs DistilBERT. **FinBERT outperformed** generic models by +2-3% overall, with strongest gains (+3%) on professional financial news.
+- **Architecture:** Treating FiQA scores as regression targets improved accuracy on that dataset by **+15%** (from 65% to 80%).
 - **Data cleaning:** Several cleaning/filtering steps were tested, but did not consistently improve accuracy when training/testing on the same distribution; cleaning remains available via flags but is disabled by default (see [EXPERIMENTS.md](EXPERIMENTS.md)).
+**Next Steps** - LoRA/PEFT Implementation
 
 **Data sources**
 
@@ -80,6 +82,17 @@ This architecture significantly outperformed our **Single-Task Baseline** (stand
 - **Multi-Task Loss:** We combine Cross-Entropy (for classes) and MSE (for scores) to handle diverse data formats simultaneously.
 - **Robust Training:** Includes Early Stopping (patience=3) to prevent overfitting and fixed random seeds for Reproducibility.
 - **Loss weighting:** Multi-task loss uses Cross-Entropy (classification) + weighted MSE (regression); defaults are rescaled to `1/10` for implementation convenience while preserving the original 1:10 ratio.
+
+### Model Selection Benchmark
+*Tested Jan 20, 2026 on identical Multi-Task pipeline*
+
+| Model | Overall | PhraseBank (News) | Twitter (Social) | FiQA (Forum) | Params |
+|-------|---------|-------------------|------------------|--------------|--------|
+| **FinBERT** | **85.0%** | **95.6%** | **82.8%** | **76.6%** | 110M |
+| BERT-Base | 83.0% | 92.7% | 81.9% | 75.0% | 110M |
+| DistilBERT | 82.0% | 90.3% | 80.7% | 75.0% | 66M |
+
+**Conclusion:** FinBERT's domain-specific pre-training provides measurable accuracy gains, particularly on professional financial text (PhraseBank +5% vs DistilBERT, +3% vs BERT). Selected as the production model.
 
 
 
@@ -155,14 +168,20 @@ python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
 
 ### Training
 ```bash
-# Train baseline model (Downloads datasets automatically on first run, ~10MB total)
-python -m finsentiment train # Defaults to Multi-Task architecture. Use --model-type multi for baseline.
+# Train with FinBERT (default, recommended)
+python -m finsentiment train
 
+# Experiment with other models
+python -m finsentiment train --model-name bert        # Generic BERT
+python -m finsentiment train --model-name distilbert  # Lightweight variant
+
+# All models support multi-task architecture (default) or single-task
+python -m finsentiment train --model-type single
 ```
 **Training Time:**
-- **GPU (RTX 4050):** ~4 minutes (3 epochs)
-- **CPU (Intel Core Ultra 7):** ~50 minutes (3 epochs)
-
+- **GPU (RTX 4050):** ~2 minutes per epoch
+- **CPU (Intel Core Ultra 7):** ~20 minutes per epoch
+> *Note: DistilBERT showed unexpectedly slower training in this configuration, likely due to dataloader bottleneck.*
 ### Evaluation
 ```bash
 #Evaluate trained model on test set

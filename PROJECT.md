@@ -147,12 +147,19 @@ Comparing Single-Task (Classification) vs Multi-Task (Class + Regression) on the
 - Result: Maintains 85% accuracy with scientifically rigorous methodology
 > See [EXPERIMENTS.md](EXPERIMENTS.md#dataset-weighting-and-pipeline-refactoring) for detailed information.
 
+**Model Selection (Completed Jan 20, 2026):**
+- Validated FinBERT vs BERT vs DistilBERT on fixed multi-task pipeline.
+- **Winner:** FinBERT (85% accuracy, +3% on professional news).
+- **Decision:** Proceed with FinBERT as the base model. DistilBERT efficiency gains did not materialize (training was slower), and accuracy drop (-5% on news) was too high.
 
+**Current Focus:** Implement LoRA (Low-Rank Adaptation) on FinBERT.
+- Goal: Match full fine-tuning performance (85%) with <1% trainable parameters.
+- Hypothesis: LoRA will reduce checkpoint size and allow faster iteration.
 
 
 ### Potential Future Improvements
 
-**Multi-Task Learning**
+**Multi-Task Learning** -> Done
 - Dual-head architecture: classification + regression
 - Use FiQA continuous scores (avoid percentile binning)
 - Goal: Improve FiQA to 50%+ or document exclusion
@@ -166,7 +173,7 @@ Comparing Single-Task (Classification) vs Multi-Task (Class + Regression) on the
 - Error analysis on FiQA misclassifications
 - Attention visualization for failing examples
 
-**Alternative Models:**
+**Alternative Models:** -> Done
 - DistilBERT (faster, smaller)
 - Separate FiQA-specific model (if multi-task fails)
 
@@ -210,3 +217,28 @@ Only if Phase 3 proves valuable
 - Ready for Phase 2 experimentation
 
 **2025-12-16**: Repository created, roadmap defined
+**2026-01-03**: Data Leakage Fix \& Multi-Task Architecture
+
+- **Critical Fix:** Discovered and fixed data leakage (upsampling before train/test split)
+- Implemented Multi-Task Learning (dual-head: classification + regression)
+- **Breakthrough:** FiQA accuracy jumped from 65% → 80% (+15%) using regression head
+- Established scientifically valid baseline: 85% overall accuracy
+
+**2026-01-12**: Data Cleaning Ablation Study
+
+- Tested aggressive data cleaning (filtering short/noisy samples)
+- **Finding:** Cleaning did not improve generalization on matched distributions
+- **Decision:** Kept cleaning utilities but disabled by default
+
+**2026-01-19**: Dataset Pipeline Refactoring
+
+- Implemented fixed train/val/test splits (70/15/15) per source
+- Established explicit dataset weighting controls (Twitter:PhraseBank = 2:1)
+- Decoupled classification and regression sampling pipelines
+- **Result:** Reproducible 85% baseline with fixed test set (1,896 samples)
+
+**2026-01-20**: Model Selection Completed
+- Benchmarked FinBERT, BERT-Base, and DistilBERT.
+- Confirmed FinBERT + Multi-Task is the superior configuration (85% accuracy).
+- Refactored CLI to support dynamic model selection and logging.
+
