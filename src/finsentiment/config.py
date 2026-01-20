@@ -28,7 +28,6 @@ PATIENCE = 2
 # Model config
 #MODEL_NAME = 'bert-base-uncased'
 MODEL_NAME = 'ProsusAI/finbert'
-MODEL_PATH = MODELS_DIR / f'sentiment_model_stop_testFiQA_{MODEL_NAME.split("/")[-1]}.pt'
 
 NUM_CLASSES = 3
 
@@ -52,6 +51,12 @@ SEED = 42
 # on the full test set.
 CLEAN_DATA_DEFAULT = False 
 
+MODEL_REGISTRY = {
+    'finbert': 'ProsusAI/finbert',
+    'bert': 'bert-base-uncased',
+    'distilbert': 'distilbert-base-uncased',
+}
+
 def set_seed(seed=SEED):
     """Set seed for reproducibility."""
     random.seed(seed)
@@ -62,6 +67,17 @@ def set_seed(seed=SEED):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-def get_model_path(model_type='single'):
+def get_model_path(model_name='base', model_type='single'):
     """Get default model checkpoint path."""
-    return MODELS_DIR / f"{model_type}_task_model.pt"
+    return MODELS_DIR / f"{model_name}_{model_type}_task_model.pt"
+
+def resolve_model_name(model_key: str) -> str:
+    """
+    Map a short CLI model key to the full HuggingFace model identifier.
+    Falls back to default if key is not found.
+    """
+    if model_key not in MODEL_REGISTRY:
+        # Optional: warn user or raise error
+        print(f"Warning: Model '{model_key}' not found in registry.")
+        
+    return MODEL_REGISTRY[model_key]

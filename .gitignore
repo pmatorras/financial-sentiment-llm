@@ -22,6 +22,7 @@ venv/
 models/*
 !models/info.md
 data/
+logs/
 
 !data/sample_*.csv
 

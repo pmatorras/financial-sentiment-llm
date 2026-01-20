@@ -75,8 +75,17 @@ def evaluate_model(model, test_loader, device='cuda', is_multi_task=False):
             
     return {'predictions': all_preds, 'labels': all_labels}
 
+def print_and_log(msg, log_file=None):
+    # Ensure msg is a string
+    msg_str = str(msg)
+    
+    print(msg_str)
+    if log_file:
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(msg_str + '\n')
 
-def print_evaluation_results(labels, predictions, test_df):
+
+def print_evaluation_results(labels, predictions, test_df, log_file=None):
     """
     Print formatted evaluation results.
     
@@ -88,20 +97,20 @@ def print_evaluation_results(labels, predictions, test_df):
     label_names = ['negative', 'neutral', 'positive']
     
     # Overall metrics
-    print("\n" + "="*60)
-    print("=== Overall Test Set Performance ===")
-    print("="*60)
-    print(classification_report(labels, predictions, target_names=label_names))
+    print_and_log("\n" + "="*60, log_file)
+    print_and_log("=== Overall Test Set Performance ===", log_file)
+    print_and_log("="*60, log_file)
+    print_and_log(classification_report(labels, predictions, target_names=label_names), log_file)
     
-    print("\nConfusion Matrix:")
+    print_and_log("\nConfusion Matrix:", log_file)
     cm = confusion_matrix(labels, predictions)
     cm_df = pd.DataFrame(cm, index=label_names, columns=label_names)
-    print(cm_df)
+    print_and_log(cm_df, log_file)
     
     # Per-source performance
-    print("\n" + "="*60)
-    print("=== Performance by Data Source ===")
-    print("="*60)
+    print_and_log("\n" + "="*60, log_file)
+    print_and_log("=== Performance by Data Source ===", log_file)
+    print_and_log("="*60, log_file)
     test_df['prediction'] = predictions
     
     for source in ['phrasebank', 'twitter', 'fiqa']:
@@ -114,7 +123,7 @@ def print_evaluation_results(labels, predictions, test_df):
             source_labels = source_df['label'].values
             source_preds = source_df['prediction'].values
             
-            print(f"\n{source.upper()} ({len(source_df)} samples) - Overall: {accuracy:.2%}")
+            print_and_log(f"\n{source.upper()} ({len(source_df)} samples) - Overall: {accuracy:.2%}", log_file)
             
             # Generate classification report just for this source
             try:
@@ -127,12 +136,12 @@ def print_evaluation_results(labels, predictions, test_df):
                 )
                 
                 # Print per-class breakdown
-                print(f"  Class Breakdown:")
+                print_and_log(f"  Class Breakdown:", log_file)
                 for label in label_names:
                     if label in report:
                         metrics = report[label]
                         support = int(metrics['support'])
-                        print(f"    {label:8s}: P={metrics['precision']:.2f} R={metrics['recall']:.2f} F1={metrics['f1-score']:.2f} (n={support})")
+                        print_and_log(f"    {label:8s}: P={metrics['precision']:.2f} R={metrics['recall']:.2f} F1={metrics['f1-score']:.2f} (n={support})", log_file)
                         
             except Exception as e:
-                print(f"  Could not generate detailed metrics: {e}")
+                print_and_log(f"  Could not generate detailed metrics: {e}", log_file)

@@ -13,7 +13,8 @@ from finsentiment.config import (
     MODELS_DIR,
     CLEAN_DATA_DEFAULT,
     set_seed,
-    get_model_path
+    get_model_path,
+    resolve_model_name
 )
 from finsentiment.datasets import FinancialSentimentDataset, prepare_combined_dataset
 from finsentiment.modeling import FinancialSentimentModel
@@ -32,14 +33,18 @@ def execute(args):
     """
     # Get configuration and components
     is_multi_task = (args.model_type == 'multi')
+    model_name = resolve_model_name(args.model)
+    model_path = get_model_path(model_name=args.model, model_type=args.model_type)
     print(f"Running on: Mode={args.model_type}, MultiTask={is_multi_task}")
+    print(f"Base Model: {model_name}")
+    print(f"Model will be saved to: {model_path}")
 
     # Prepare data
     set_seed()
     data_splits = prepare_combined_dataset(seed=SEED, multi_task=is_multi_task, clean_data=CLEAN_DATA_DEFAULT)
     
     # Load tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
     
     
     train_dataset = FinancialSentimentDataset(data_splits['train'], tokenizer)
@@ -50,7 +55,7 @@ def execute(args):
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size)
     
     # Initialize model
-    model = FinancialSentimentModel()
+    model = FinancialSentimentModel(model_name=model_name)
     
     # Train
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -70,6 +75,5 @@ def execute(args):
     )
     
     # Save model
-    model_path = get_model_path(args.model_type)
     torch.save(model.state_dict(), model_path)
     print(f"\n✓ Training complete! Model saved to {model_path}")
