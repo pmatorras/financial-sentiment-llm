@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info
+*.log
+
+# Gradio cache (local only)
+.gradio/
+.gradio-cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Models and data
+models/*
+!models/info.md
+data/
+logs/
+
+!data/sample_*.csv
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
