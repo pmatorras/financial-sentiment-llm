@@ -94,7 +94,7 @@ def set_seed(seed=SEED):
 
 def get_model_path(model_name='base', model_type='single'):
     """Get default model checkpoint path."""
-    return MODELS_DIR / f"{model_name}_{model_type}_task_model20.pt"
+    return MODELS_DIR / f"{model_name}_{model_type}_task_model.pt"
 
 
 def get_model_config(model_key: str) -> str:

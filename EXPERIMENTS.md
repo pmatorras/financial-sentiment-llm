@@ -312,3 +312,45 @@ fiqa: 1.0
 
 **Conclusion:**
 **FinBERT** remains the superior choice. The accuracy gain on professional text is significant enough to justify the standard model size over DistilBERT.
+
+***
+
+### LoRA Implementation \& Tuning
+
+**Date:** Jan 21, 2026 \
+**Goal:** Implement Parameter-Efficient Fine-Tuning (LoRA) to reduce training cost and storage size while maintaining FinBERT's performance.
+
+**Configurations Tested:**
+All LoRA models used the same frozen FinBERT backbone.
+
+1. **`finbert-lora` (Baseline):** Rank `r=8`, Alpha `16`, Targets `["query", "value"]`.
+2. **`finbert-lora-r64` (High Capacity):** Rank `r=64`, Alpha `128`, Targets `["query", "key", "value", "dense"]`.
+3. **`finbert-lora-tuned` (Balanced):** Rank `r=16`, Alpha `32`, Targets `["query", "key", "value", "dense"]`.
+4. **`finbert-lora-tuned-weighted`:** Same as Balanced but with `regression_weight=20.0`.
+5. **`finbert-lora-r64-weighted` (Max Resources):** Rank `r=64`, `regression_weight=20.0`.
+
+**Results:**
+
+
+| Model | Rank | Weight | Epochs | Overall Acc | PhraseBank | Twitter | FiQA (Reg) | Speed/Epoch |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| **Full FinBERT** | N/A | 10.0 | 16 | **85.4%** | 95.9% | **83.3%** | **81.5%** | ~105s |
+| LoRA Baseline | 8 | 10.0 | 15 | 70.0% | 89.4% | 65.2% | 71.8% | **~55s** |
+| LoRA High-Cap | 64 | 10.0 | 9 | 85.0% | 95.3% | **84.7%** | 66.1% | ~100s |
+| **LoRA Tuned** | **16** | **10.0** | **10** | **83.2%** | **97.1%** | 80.5% | 72.6% | **~80s** |
+| LoRA Tuned+W | 16 | 20.0 | 8 | 78.0% | 94.1% | 74.1% | 75.0% | ~80s |
+| LoRA Max Res | 64 | 20.0 | 9 | 84.4% | **97.7%** | 82.5% | 68.6% | ~100s |
+
+**Key Findings:**
+
+1. **Classification Parity:** For pure classification tasks, LoRA is effectively equivalent to Full Fine-Tuning. The `r=16` model outperformed FinBERT on News (PhraseBank), and the `r=64` model outperformed FinBERT on Social Media (Twitter).
+2. **Multi-Head Divergence:** The Multi-Head architecture reveals a critical limitation of LoRA. While it handles the discrete classification heads easily, it consistently fails to match Full FinBERT on the continuous regression head (FiQA).
+    * **Low Rank (`r=16`)**: Underfits the regression complexity (72% vs 81%).
+    * **High Rank (`r=64`)**: Overfits the small regression dataset (66% vs 81%).
+    * **Weighting**: Aggressive loss weighting (`20.0`) failed to close this gap and instead destabilized the classification tasks.
+3. **Efficiency Analysis:**
+    * **Storage:** LoRA is a clear winner (5MB vs 420MB).
+    * **Time:** The training speed advantage diminishes as Rank increases. At `r=64`, LoRA is nearly as slow as full fine-tuning, negating the time benefit.
+
+**Conclusion:**
+LoRA is a viable replacement for FinBERT **only if the use case is restricted to Classification**. In these scenarios, it delivers comparable or superior accuracy with massive storage savings. However, for a true **Multi-Task** system that relies on high-quality Regression output (e.g., FiQA scores), LoRA's constrained parameter space is insufficient to model the continuous output distribution effectively. For robust Multi-Head performance, **Full Fine-Tuning remains the required approach.**
