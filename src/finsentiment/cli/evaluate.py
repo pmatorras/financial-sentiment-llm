@@ -4,16 +4,17 @@ import torch
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
 import datetime
+from peft import PeftModel
 from finsentiment.config import (
     BATCH_SIZE, 
     get_model_path,
-    resolve_model_name
+    get_model_config
 )
 from finsentiment.datasets.preprocessing import prepare_combined_dataset
 from finsentiment.evaluation.metrics import evaluate_model, print_evaluation_results, print_and_log
 
 from finsentiment.datasets import FinancialSentimentDataset
-from finsentiment.modeling import FinancialSentimentModel
+from finsentiment.modeling import FinancialSentimentModel,LoRAFinancialSentimentModel
 
 def execute(args):
     """
@@ -37,8 +38,8 @@ def execute(args):
     print_and_log("\nLoading test data...", log_file)
     data_splits = prepare_combined_dataset(multi_task=is_multi_task)
     test_df = data_splits['test']
-    model_name = resolve_model_name(args.model)
-
+    model_config = get_model_config(args.model)
+    model_name = model_config['base_model']
     # Setup tokenizer and dataset
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     test_dataset = FinancialSentimentDataset(test_df, tokenizer)
@@ -48,8 +49,32 @@ def execute(args):
 
     # Load model
     print_and_log(f"Loading model from: {checkpoint_path}", log_file)
-    model = FinancialSentimentModel(model_name=model_name)
-    model.load_state_dict(torch.load(checkpoint_path, weights_only=True))
+    if model_config['lora_config']:
+        # 1. Initialize STANDARD Base Model (No LoRA yet)
+        # We need the bare FinBERT to attach the trained adapter to.
+        # DO NOT use LoRAFinancialSentimentModel here because it auto-initializes a fresh LoRA.
+        print_and_log("Initializing base model for LoRA attachment...", log_file)
+        model = FinancialSentimentModel(model_name=model_name)
+        
+        # 2. Attach the Trained LoRA Adapter
+        adapter_path = checkpoint_path.parent / f"{args.model}_{args.model_type}_adapter"
+        print_and_log(f"Loading LoRA adapters from: {adapter_path}", log_file)
+        
+        # This replaces model.encoder with the LoRA-wrapped encoder
+        # The base weights are frozen, adapter weights are loaded from disk
+        model.encoder = PeftModel.from_pretrained(
+            model.encoder, 
+            adapter_path
+        )
+
+        # 3. Load Task Heads
+        # (This part was correct)
+        heads_state_dict = torch.load(checkpoint_path, map_location='cpu', weights_only=True)
+        model.classifier.load_state_dict(heads_state_dict['classifier'])
+        model.regressor.load_state_dict(heads_state_dict['regressor'])
+    else:
+        model = FinancialSentimentModel(model_name=model_name)    
+        model.load_state_dict(torch.load(checkpoint_path, weights_only=True))
     
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print_and_log(f"Using device: {device}", log_file)

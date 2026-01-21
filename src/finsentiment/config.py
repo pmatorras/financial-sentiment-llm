@@ -25,24 +25,23 @@ NUM_EPOCHS = 10
 MAX_LENGTH = 128
 PATIENCE = 2
 
-# Model config
-#MODEL_NAME = 'bert-base-uncased'
-MODEL_NAME = 'ProsusAI/finbert'
-
 NUM_CLASSES = 3
+CLAS_WEIGHT = 1.0
+REGR_WEIGHT = 10.0
 
-# Dataset weights
-DATASET_WEIGHTS = {
-    'phrasebank': 0.6,
-    'twitter': 0.15,
-    'fiqa': 0.25
-}
-DATASET_WEIGHTS_ALTERNATIVE = {
-    'phrasebank': 0.4,#0.6,
-    'twitter': 0.1,#0.15,
-    'fiqa': 0.5,#0.25
+LORA_DEFAULT = {
+    "r": 8,
+    "alpha": 16,
+    "dropout": 0.1,
+    "target_modules": ["query", "value"]
 }
 
+LORA_TUNED = {
+    "r": 16,           
+    "alpha": 32,       
+    "dropout": 0.1,
+    "target_modules": ["query", "key", "value", "dense"]
+}
 # Reproducibility
 SEED = 42
 
@@ -52,9 +51,35 @@ SEED = 42
 CLEAN_DATA_DEFAULT = False 
 
 MODEL_REGISTRY = {
-    'finbert': 'ProsusAI/finbert',
-    'bert': 'bert-base-uncased',
-    'distilbert': 'distilbert-base-uncased',
+    'finbert': {
+        'base_model': 'ProsusAI/finbert',
+        'lora_config': None
+    },
+    'bert': {
+        'base_model': 'bert-base-uncased',
+        'lora_config': None
+    },
+    'distilbert': {
+        'base_model': 'distilbert-base-uncased',
+        'lora_config': None
+    },
+    'lora': {
+        'base_model': 'ProsusAI/finbert',
+        'lora_config': LORA_DEFAULT
+    },
+    'lora-tuned': {
+        'base_model': 'ProsusAI/finbert',
+        'lora_config': LORA_DEFAULT
+    },
+    'lora-r64': {
+        'base_model': 'ProsusAI/finbert',
+        'lora_config': {
+            "r": 64,
+            "alpha": 128,          # Maintain 2x ratio
+            "dropout": 0.1,
+            "target_modules": ["query", "key", "value", "dense"]
+        }
+    } 
 }
 
 def set_seed(seed=SEED):
@@ -71,13 +96,12 @@ def get_model_path(model_name='base', model_type='single'):
     """Get default model checkpoint path."""
     return MODELS_DIR / f"{model_name}_{model_type}_task_model.pt"
 
-def resolve_model_name(model_key: str) -> str:
+
+def get_model_config(model_key: str) -> str:
     """
     Map a short CLI model key to the full HuggingFace model identifier.
-    Falls back to default if key is not found.
     """
     if model_key not in MODEL_REGISTRY:
-        # Optional: warn user or raise error
-        print(f"Warning: Model '{model_key}' not found in registry.")
+        raise ValueError(f"Model '{model_key}' not found in registry. Available: {list(MODEL_REGISTRY.keys())}")
         
     return MODEL_REGISTRY[model_key]
