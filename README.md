@@ -1,13 +1,3 @@
----
-title: Financial Sentiment Demo
-emoji: 🏃
-colorFrom: yellow
-colorTo: yellow
-sdk: docker
-pinned: false
-app_port: 7860
----
-
 # Financial Sentiment LLM
 
 Fine-tuning lightweight LLMs for financial sentiment analysis using FinBERT.
@@ -20,22 +10,27 @@ Learn LLM fine-tuning techniques by building a financial sentiment classifier, t
 
 **Built with**: Python 3.10 - PyTorch - Hugging Face Transformers - Pandas
 
+## Key Results (Phase 2)
 
-## Current Status
-**Phase 2 Complete** - Model Optimization (2026-01-22)
-
-- **Best Overall Model:** **FinBERT Multi-Task** (85.4% Accuracy)
-    - Most robust across all domains (News, Social, Forum).
-    - Necessary for high-performance regression (FiQA).
-- **Best Efficient Model:** **FinBERT LoRA r16** (83.2% Accuracy)
-    - **99% Storage Savings** (5MB vs 420MB).
-    - Matches/Beats full model on News/Social classification.
-    - Ideal for constrained deployment where complex regression (FiQA) is less critical.
-
-**Next Steps** - Phase 3: Deployment & Integration into Financial-ML pipeline.
+*Optimisation Complete - Jan 22, 2026*
 
 
-**Data sources**
+| Category | Model | Accuracy | Storage | Key Strengths |
+| :-- | :-- | :-- | :-- | :-- |
+| **Best Performance** | **FinBERT Multi-Task** | **85.4%** | ~420 MB | -  Best generalization (+4.4%)<br>-  Necessary for forum discussions (FiQA) |
+| **Best Efficiency** | **FinBERT LoRA (r16)** | 83.2% | **~5 MB** | -  **99% Storage Savings**<br>-  Matches performance on News/Twitter |
+
+**Next Steps:** Phase 3 - Deployment \& Integration into Financial-ML pipeline.
+
+
+## Model Architecture & Training
+
+To handle the diverse nature of financial text, this project implements a **Multi-Task FinBERT** architecture. Unlike standard classifiers, this model shares a BERT backbone with two task-specific heads:
+
+1. **Classification Head:** Predicts Negative/Neutral/Positive (for news/tweets).
+2. **Regression Head:** Predicts continuous sentiment scores (for FiQA).
+
+**Training data**
 
 - [Financial PhraseBank](https://huggingface.co/datasets/takala/financial_phrasebank) (Professional news)
 - [Twitter Financial News](https://huggingface.co/datasets/zeroshot/twitter-financial-news-sentiment) (Social media)
@@ -43,69 +38,51 @@ Learn LLM fine-tuning techniques by building a financial sentiment classifier, t
 
 > ***Note**: Training uses 2:1 Twitter/PhraseBank ratio with decoupled sampling. See [EXPERIMENTS.md](EXPERIMENTS.md) for methodology.*
 
-**Next Steps** - LoRA Implementation & Inference Optimization
+**Single vs Multi-task**
 
-See [PROJECT.md](PROJECT.md) for detailed results and roadmap.
+We compared our Multi-Task architecture against a standard Single-Task FinBERT baseline. The Multi-Task approach yielded a **+4.4%** increase in overall accuracy (85.4% vs 81.0%). The improvement was consistent across all data sources but was especially relevant in Twitter/Social Media, where accuracy increased by **+6.1%** (from 77.2% to 83.3%)
 
-## Model Approach \& Performance
+**Technical Strategy**
+- **Multi-Task Loss:** We combine Cross-Entropy (for classes) and MSE (for scores) to handle diverse data formats simultaneously.
+- **Robust Training:** Includes Early Stopping (patience=2) to prevent overfitting and fixed random seeds for Reproducibility.
+- **Loss weighting:** Multi-task loss uses Cross-Entropy (classification) + weighted MSE (regression); defaults are rescaled to `1/10` for implementation convenience while preserving the original 1:10 ratio.
 
-To handle the diverse nature of financial text, this project implements a **Multi-Task FinBERT** architecture. Unlike standard classifiers, this model shares a BERT backbone with two task-specific heads:
+**Lightweight alternative (LoRA)**
 
-1. **Classification Head:** Predicts Negative/Neutral/Positive (for news/tweets).
-2. **Regression Head:** Predicts continuous sentiment scores (for FiQA).
+We also tested **Low-Rank Adaptation (LoRA)** as a lightweight alternative to determine if we could maintain performance while drastically reducing model size.
+- **Concept:** Freezes the 110M FinBERT parameters and injects small trainable rank decomposition matrices.
+- **Result:** We achieved **83.2% accuracy** (vs 85.4% baseline) using only **5MB** of trainable weights.
+- **Trade-off:**  LoRA matches the full model on standard news text but consistently underperforms on complex forum discussions (**FiQA**), both in the single and multi-task architectures, suggesting the full parameter space is needed for this specific domain.
 
 ## Validation Results
 *Phase 2 (Jan 2026)*
 
-These results use a **Multi-Task Architecture** (Classification + Regression) to better handle the continuous sentiment scores in the FiQA dataset. 
+We benchmarked multiple architectures on a fixed test set (N=1,896) to balance accuracy, efficiency, and robustness. 
 
-This architecture significantly outperformed our **Single-Task Baseline** (standard classification). By training on continuous scores (Regression), the model learns sentiment intensity, yielding a **+15%** accuracy boost on the challenging FiQA dataset.
-| Metric | Value |
-|--------|-------|
-| Overall Accuracy | 85.0% |
-| Macro F1-Score | 0.84 |
+| Model | Architecture | Overall Acc | F1-Score | PhraseBank | Twitter | FiQA | Storage |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| **FinBERT (Full)** | **Multi-Task** | **85.4%** | **0.83** | 95.9% | **83.3%** | **81.5%** | ~420 MB | ->checked
+| **FinBERT (LoRA)** | Multi-Task | 83.2% |0.80 | **97.1%** | 80.5% | 72.6% | **~5 MB** |
+| FinBERT (Full) | Single-Task | 81.0% | 0.77 | 95.3% | 77.2% | 80.6% | ~420 MB | 
+| FinBERT (LoRA) | Single-Task | 79.0% | 0.79 | 95.8% | 75.4% | 73.4% | ~5 MB |
+| BERT-Base | Multi-Task | 83.0% | 0.81 | 92.7% | 81.9% | 75.0% | 110M | ~420 MB |
+| DistilBERT | Multi-Task | 82.0% | 0.79 | 90.3% | 80.7% | 75.0% | ~260 MB |
 
-### Performance by Dataset Source
-
-| Dataset | Accuracy | Samples | Style |
-|---------|----------|---------|-------|
-| FinancialPhraseBank | 95.6% | 340 | Professional news |
-| Twitter Financial | 82.8% | 1,432 | Social media |
-| FiQA Forums | 76.6% | 124 | Retail discussions|
-
-### Performance by Sentiment Class
-
-| Class | Precision | Recall | F1-Score |
-|-------|-----------|--------|----------|
-| Negative | 0.74 | 0.82 | 0.78 |
-| Neutral | 0.87 | 0.76 | 0.81 |
-| Positive | 0.87 | 0.90 | 0.88 |
-
-### Why this Architecture?
-- **Capturing Nuance:** Standard classification throws away the difference between "slightly negative" and "very negative." The regression head forces the model to learn this nuance.
-- **Multi-Task Loss:** We combine Cross-Entropy (for classes) and MSE (for scores) to handle diverse data formats simultaneously.
-- **Robust Training:** Includes Early Stopping (patience=3) to prevent overfitting and fixed random seeds for Reproducibility.
-- **Loss weighting:** Multi-task loss uses Cross-Entropy (classification) + weighted MSE (regression); defaults are rescaled to `1/10` for implementation convenience while preserving the original 1:10 ratio.
-### Efficiency Strategy (LoRA)
-To reduce deployment costs, we implemented **Low-Rank Adaptation (LoRA)**.
-- **Concept:** Freezes the 110M FinBERT parameters and injects small trainable rank decomposition matrices.
-- **Result:** We achieved **83.2% accuracy** (vs 85.4% baseline) using only **5MB** of trainable weights.
-- **Trade-off:** LoRA is excellent for classification (News/Twitter) but slightly less stable for complex regression tasks (FiQA).
-
-### Model Selection Benchmark
-*Tested Jan 20, 2026 on identical Multi-Task pipeline*
-
-| Model | Overall | PhraseBank (News) | Twitter (Social) | FiQA (Forum) | Params | Storage (Checkpoint) |
-|-------|---------|-------------------|------------------|--------------|--------|----------------------|
-| **FinBERT (Full)** | **85.4%** | 95.9% | **83.3%** | **81.5%** | 110M | ~420 MB |
-| **FinBERT (LoRA)** | 83.2% | **97.1%** | 80.5% | 72.6% | 110M | **~5 MB** |
-| BERT-Base | 83.0% | 92.7% | 81.9% | 75.0% | 110M | ~420 MB |
-| DistilBERT | 82.0% | 90.3% | 80.7% | 75.0% | 66M | ~260 MB |
-
-**Conclusion:** 
-- FinBERT's domain-specific pre-training provides measurable accuracy gains, particularly on professional financial text (PhraseBank +5% vs DistilBERT, +3% vs BERT). Selected as the production model.
+**Key results**
+- **Best Overall Performance:** FinBERT Multi-Task achieves 85.4% accuracy, outperforming generic BERT (+2.4%) and DistilBERT (+3.4%), especially on professional news text.
 - **Production (Cloud):** Use **FinBERT (Full)** for maximum robustness.
 - **Production (Edge/Lightweight):** Use **FinBERT (LoRA)**. While total inference parameters are similar, the **trainable/storage footprint is 99% smaller (5MB)**.
+
+
+### Detailed Performance comparison
+The Full Model maintains stronger precision across "Negative" and "Neutral" classes, while LoRA achieves near-parity on "Positive" sentiment detection (0.87 F1 vs 0.89). This performance gap reflects LoRA's constrained capacity on complex financial text.
+
+| Class | **FinBERT**  |  | | **LoRA** | | |
+|-------|-----------|--------|----|-----------|--------|----|
+|       | Precision | Recall | F1 | Precision | Recall | F1 |
+| Negative | 0.78 | 0.77 | 0.77 | 0.72 | 0.76 | 0.74 |
+| Neutral | 0.87 | 0.78 | 0.82 | 0.81 | 0.78 | 0.79 |
+| Positive | 0.87 | 0.91 | 0.89 | 0.86 | 0.87 | 0.87 |
 
 
 ## Project Structure
@@ -125,7 +102,8 @@ To reduce deployment costs, we implemented **Low-Rank Adaptation (LoRA)**.
 │       │   └── clean_data.py     # Optional cleaning utilities (default OFF)
 │       ├── modeling/             # Model definition(s)
 │       │   ├── __init__.py
-│       │   └── bert.py           # FinancialSentimentModel (cls + reg heads)
+│       │   ├── bert.py           # FinancialSentimentModel (cls + reg heads)
+│       │   └── bert.py           # LoRAFinancialSentimentModel (cls + reg heads)
 │       ├── training/             # Training loop(s)
 │       │   ├── __init__.py
 │       │   └── trainer.py
@@ -137,12 +115,16 @@ To reduce deployment costs, we implemented **Low-Rank Adaptation (LoRA)**.
 │       └── __main__.py           # python -m finsentiment
 ├── data/
 │ └── raw/ # Auto-downloaded datasets
-├── models/ # Saved checkpoints
-├── notebooks/ # Exploratory analysis
-├── PROJECT.md # Detailed roadmap & progress
-└── README.md # This file
+├── scripts/       # Stand alone scripts to run
+├── models/        # Saved checkpoints
+├── logs/          # Evaluation results  
+├── app.py         # HuggingFace Space demo app
+├── Dockerfile     # Demo containerization
+├── .gitignore     # Git ignore rules
+├── EXPERIMENTS.md # Description of each experiment made
+├── PROJECT.md     # Detailed roadmap & progress
+└── README.md      # This file
 ```
-> **Note**: the codebase is organized as a unified pipeline (multi-task capable), rather than maintaining parallel "single vs multi" modules.
 
 ## Installation
 
