@@ -3,7 +3,6 @@ import gradio as gr
 import torch.nn.functional as F
 from transformers import AutoTokenizer
 from finsentiment.modeling.bert import FinancialSentimentModel
-from finsentiment.config import MODEL_NAME
 
 # Use the helper function to get the correct path
 CHECKPOINT_PATH = "models/multi_task_model_phase2.pt" 
@@ -11,7 +10,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Load Model
 print(f"Loading model from {CHECKPOINT_PATH}...")
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+tokenizer = AutoTokenizer.from_pretrained('ProsusAI/finbert')
 model = FinancialSentimentModel()
 
 # Load weights (map_location ensures it runs on CPU if CUDA is missing)
