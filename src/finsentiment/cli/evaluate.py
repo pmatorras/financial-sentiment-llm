@@ -50,25 +50,22 @@ def execute(args):
     # Load model
     print_and_log(f"Loading model from: {checkpoint_path}", log_file)
     if model_config['lora_config']:
-        # 1. Initialize STANDARD Base Model (No LoRA yet)
-        # We need the bare FinBERT to attach the trained adapter to.
-        # DO NOT use LoRAFinancialSentimentModel here because it auto-initializes a fresh LoRA.
+        # Initialize STANDARD Base Model (No LoRA yet)
+
         print_and_log("Initializing base model for LoRA attachment...", log_file)
         model = FinancialSentimentModel(model_name=model_name)
         
-        # 2. Attach the Trained LoRA Adapter
+        # Attach the Trained LoRA Adapter
         adapter_path = checkpoint_path.parent / f"{args.model}_{args.model_type}_adapter"
         print_and_log(f"Loading LoRA adapters from: {adapter_path}", log_file)
         
-        # This replaces model.encoder with the LoRA-wrapped encoder
-        # The base weights are frozen, adapter weights are loaded from disk
+        # Base weights frozen, Adapter weights loaded from disk
         model.encoder = PeftModel.from_pretrained(
             model.encoder, 
-            adapter_path
+            str(adapter_path)
         )
 
-        # 3. Load Task Heads
-        # (This part was correct)
+        # Load Task Heads
         heads_state_dict = torch.load(checkpoint_path, map_location='cpu', weights_only=True)
         model.classifier.load_state_dict(heads_state_dict['classifier'])
         model.regressor.load_state_dict(heads_state_dict['regressor'])

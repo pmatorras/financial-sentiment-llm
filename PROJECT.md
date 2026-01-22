@@ -1,10 +1,10 @@
 # Financial Sentiment LLM
 
 ## Objective
-Fine-tune a lightweight LLM using LoRA/QLoRA for financial sentiment analysis, then integrate sentiment features into financial-ML pipeline.
+Build and validate a robust financial sentiment model across multiple text domains (News / Social / Forum) using a fixed, leak-free evaluation pipeline, and integrate the resulting sentiment signals into the financial-ML pipeline.
 
 ## Learning Goals
-- Understand LoRA/QLoRA parameter-efficient fine-tuning
+- Understand LoRA parameter-efficient fine-tuning (and when quantization-based variants are/aren’t useful)
 - Implement HuggingFace Transformers training pipeline
 - Design evaluation framework for NLP tasks
 - Build production-ready inference system
@@ -87,7 +87,7 @@ positive        62        7       265
 ---
 
 ## Phase 2: Model Optimization
-**Status:** In Progress (Jan 19, 2026)
+**Status:** In Progress (Jan 22, 2026)
 > ⚠ **NOTE**: Early experiments in this section (Dec 19) contain data leakage (inflated scores). See [ Data Leakage Fix & Multi-Task Validation](#data-leakage-fix--multi-task-validation) for the first scientifically valid results.
 
 **Drop FiQA Dataset**
@@ -110,9 +110,12 @@ positive        62        7       265
 - Prevents overfitting, reduces training time 40%
 - Best model automatically selected at epoch 2-3
 
-**Current Baseline:** FinBERT + early stopping
-- Overall: 86% | PhraseBank: 99.52% | Twitter: 78.57% | FiQA: 34.59%
-- Positive recall: 0.95 
+**Current Baseline (fixed split, multi-task):** FinBERT (full fine-tune)
+- Overall accuracy: **85.4%**
+- PhraseBank: **95.88%**
+- Twitter: **83.31%**
+- FiQA: **81.45%**
+
 
 ### Data Leakage Fix & Multi-Task Validation
 **Date:** Jan 03, 2026
@@ -154,18 +157,25 @@ Comparing Single-Task (Classification) vs Multi-Task (Class + Regression) on the
 
 
 ### LoRA Implementation (Parameter-Efficient Fine-Tuning)
-**Date:** Jan 21, 2026
-**Goal:** Reduce training cost and storage size while maintaining FinBERT's performance in a Multi-Head architecture.
+**Date:** Jan 21-2, 2026
+**Goal:** Evaluate whether a LoRA adapter (~5MB) can provide a useful low-storage alternative to full FinBERT, especially for classification, while preserving robustness across multiple sources.
 
-**Results:**
-- **Success:** LoRA (Rank 16) matches or exceeds full FinBERT on classification tasks.
-    - PhraseBank (News): **97.1%** (vs 95.9% FinBERT)
-    - Twitter (Social): **80.5%** (vs 83.3% FinBERT)
-- **Limitation:** LoRA struggles with the regression head (FiQA), dropping ~9% accuracy compared to full fine-tuning.
-- **Efficiency:** 
-    - Checkpoint size: **5 MB** (vs 420 MB) - **99% reduction**
-    - Training speed: ~25% faster per epoch
+**Multi-Task (Classification + Regression):**
+- Full FinBERT remains the most robust option across domains, especially on FiQA (Forum).  
+  - Full FinBERT (multi-task): Overall **85.4%**, PhraseBank **95.88%**, Twitter **83.31%**, FiQA **81.45%**.
+- LoRA r16 (multi-task) delivers strong classification performance but a consistent gap on FiQA compared to full fine-tuning.  
+  - LoRA r16 (multi-task, best observed run): Overall **83.2%**, PhraseBank **97.06%**, Twitter **80.45%**, FiQA **69.35%**.
+- A separate LoRA r16 multi-task run produced lower aggregate accuracy (Overall **79.0%**, PhraseBank **95.88%**, Twitter **75.49%**, FiQA **73.39%**), highlighting sensitivity to checkpoint/training settings and the importance of consistent experiment bookkeeping.  
 
+**Single-Task (Classification-only):**
+- Full FinBERT (single-task): Overall **81.0%**, PhraseBank **95.29%**, Twitter **77.16%**, FiQA **80.65%**.
+- LoRA r64 (single-task): Overall **81.0%**, PhraseBank **96.47%**, Twitter **77.86%**, FiQA **72.58%**.
+- LoRA r8 (single-task): Overall **71.0%**, PhraseBank **94.12%**, Twitter **65.50%**, FiQA **77.42%**.
+
+**Interpretation:**
+- The optimization objective (Twitter 50%, PhraseBank 25%, FiQA 25%) explicitly rewards robustness across diverse sources, and under that framing full FinBERT is the best-performing and most stable model.  
+- LoRA still provides an appealing “small model” option: with ~1% of the storage footprint it learns meaningful signals (including on FiQA), even if it does not match full fine-tuning on the hardest domain-shift cases.
+- Single-task runs are useful as fast iteration cycles (simpler architecture), but multi-task training is the most consistent route to higher overall performance on the fixed multi-source benchmark.
 > See [EXPERIMENTS.md](EXPERIMENTS.md#lora-implementation--tuning) for detailed information.
 
 

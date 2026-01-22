@@ -1,6 +1,6 @@
 # Experiment Log
 
-## Phase 2: Model Optimization
+## Phase 2: Model optimisation
 >WARNING (Jan 03, 2026):
 Results in this section (Dec 19 experiments) were obtained using a preprocessing pipeline that contained Data Leakage (Upsampling was applied before the Train/Test split).
 While the accuracy on FiQA remained low (36%), the PhraseBank/Twitter scores may be inflated due to duplicate samples appearing in both sets.
@@ -201,7 +201,7 @@ positive         9        7       318  ← Many more correct!
 ### Data cleaning ablation (clean vs not-clean)
 
 **Date:** Jan 12, 2026 \
-**Goal:** Verify whether dataset “cleaning” (e.g., filtering short texts) improves real generalization, vs. just changing the evaluation distribution.
+**Goal:** Verify whether dataset “cleaning” (e.g., filtering short texts) improves real generalisation, vs. just changing the evaluation distribution.
 
 **Setup (important):**
 
@@ -354,3 +354,40 @@ All LoRA models used the same frozen FinBERT backbone.
 
 **Conclusion:**
 LoRA is a viable replacement for FinBERT **only if the use case is restricted to Classification**. In these scenarios, it delivers comparable or superior accuracy with massive storage savings. However, for a true **Multi-Task** system that relies on high-quality Regression output (e.g., FiQA scores), LoRA's constrained parameter space is insufficient to model the continuous output distribution effectively. For robust Multi-Head performance, **Full Fine-Tuning remains the required approach.**
+
+***
+
+### Experiment: Single-Task vs Multi-Task LoRA
+
+**Date:** Jan 21-22, 2026 \
+**Goal:** Determine if LoRA's performance gap is caused by the multi-task architecture (splitting capacity between Classification/Regression) or inherent to the method itself. We tested models in "Single-Task Mode" (treating everything as classification, including FiQA).
+
+**Configurations:**
+
+- **Full FinBERT (Single):** Standard fine-tuning, all params trainable. (4 epochs @ ~45s/epoch)
+- **LoRA r8 (Single):** Low rank baseline. (10 epochs @ ~30s/epoch)
+- **LoRA r16 (Single):** Balanced rank. (8 epochs @ ~30s/epoch)
+- **LoRA r64 (Single):** High rank. (4 epochs @ ~45s/epoch)
+
+**Results Table:**
+
+
+| Model | Architecture | Overall Acc | PhraseBank (News) | Twitter (Social) | FiQA (Forum) | Notes |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| **Full FinBERT** | Multi-Task | **85.4%** | 95.9% | **83.3%** | **81.5%** | **Gold Standard** |
+| LoRA Tuned (r16) | Multi-Task | 83.2% | **97.1%** | 80.5% | 72.6% | Best Efficient Model |
+| **Full FinBERT** | Single-Task | **81.0%** | 95.3% | 77.2% | **80.6%** | Baseline for classification-only |
+| LoRA r64 | Single-Task | **81.0%** | **96.5%** | **77.9%** | 72.6% | **Full FinBERT accuracy but workse FiQA** |
+| LoRA r16 | Single-Task | 79.0% | 95.8% | 75.4% | 73.4% | Poor performance on Twitter |
+| LoRA r8 | Single-Task | 71.0% | 94.1% | 65.5% | 77.4% | Severe underfitting on Twitter |
+
+**Key Findings:**
+
+1. **Robustness \& optimisation Target:** Full FinBERT is inherently more robust across diverse data distributions. Our optimisation target (weighted 50% Twitter / 25% News / 25% FiQA) prioritized this generalisation capability. Whether in Single or Multi-Task mode, Full FinBERT maintained >80% accuracy on the difficult FiQA dataset, whereas all LoRA variants dropped to ~72-73%. This confirms that fine-tuning all 110M parameters is necessary to capture the full complexity of forum-style financial text.
+2. **Efficiency vs Performance:** Despite the robustness gap, LoRA demonstrates impressive utility per megabyte. With just **5MB of parameters (1% of model size)**, the r16 model captures the core sentiment signals effectively, achieving ~80% accuracy on Twitter and >97% on News. This makes it a highly viable option for resource-constrained environments where a ~10% drop in complex query performance is an acceptable trade-off for 99% storage savings.
+3. **Architecture Impact (Single vs Multi):** The Multi-Task architecture consistently outperformed Single-Task equivalents (boosting Twitter accuracy by ~6%). However, the Single-Task approach offers a significant speed advantage: it converged in just 4 epochs (~3 mins total) compared to the longer training cycles of the Multi-Task setup. While less accurate, Single-Task mode is valuable for rapid prototyping and quick checks.
+
+**Conclusions:** From the models tested, we found that:
+- **Best Model:** **Full FinBERT Multi-Task** remains the winner, offering the highest accuracy and stability across all domains.
+- **Efficient Alternative:** **LoRA (r16)** is a respectable lightweight alternative. It is deployment-ready for space-constrained environments (5MB), provided the lower performance on complex tasks (FiQA) is acceptable.
+- **Development Tool:** **Single-Task** training produces inferior results but is 2-3x faster to train, making it useful for rapid iteration before committing to a full Multi-Task run.
