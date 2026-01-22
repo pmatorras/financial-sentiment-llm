@@ -15,7 +15,7 @@ Fine-tuning FinBERT for financial sentiment analysis to integrate sentiment feat
 
 | Category | Model | Accuracy | Storage | Key Strengths |
 | :-- | :-- | :-- | :-- | :-- |
-| **Best Performance** | **FinBERT Multi-Task** | **85.4%** | ~420 MB | -  Best generalization (+4.4%)<br>-  Necessary for forum discussions (FiQA) |
+| **Best Performance** | **FinBERT Multi-Task** | **85.4%** | ~420 MB | -  Best generalisation (+4.4%)<br>-  Necessary for forum discussions (FiQA) |
 | **Best Efficiency** | **FinBERT LoRA (r16)** | 83.2% | **~5 MB** | -  **99% Storage Savings**<br>-  Matches performance on News/Twitter |
 
 **🚀 [Try Live Demo](https://pablo.matorras.com/projects/finsentiment.html)** - Test the model on real financial text
@@ -118,7 +118,7 @@ The Full Model maintains stronger precision across "Negative" and "Neutral" clas
 ├── models/        # Saved checkpoints
 ├── logs/          # Evaluation results  
 ├── app.py         # HuggingFace Space demo app
-├── Dockerfile     # Demo containerization
+├── Dockerfile     # Demo containerisation
 ├── .gitignore     # Git ignore rules
 ├── EXPERIMENTS.md # Description of each experiment made
 ├── PROJECT.md     # Detailed roadmap & progress

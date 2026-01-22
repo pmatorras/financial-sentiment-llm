@@ -4,7 +4,7 @@
 Build and validate a robust financial sentiment model across multiple text domains (News / Social / Forum) using a fixed, leak-free evaluation pipeline, and integrate the resulting sentiment signals into the financial-ML pipeline.
 
 ## Learning Goals
-- Understand LoRA parameter-efficient fine-tuning (and when quantization-based variants are/aren’t useful)
+- Understand LoRA parameter-efficient fine-tuning (and when quantisation-based variants are/aren’t useful)
 - Implement HuggingFace Transformers training pipeline
 - Design evaluation framework for NLP tasks
 - Build production-ready inference system
@@ -57,7 +57,7 @@ positive        62        7       265
  **Strengths:**
 - Strong overall performance (86%)
 - Excellent on FinancialPhraseBank (professional news style)
-- Good generalization to Twitter (social media style)
+- Good generalisation to Twitter (social media style)
 - High precision on neutral (0.95) and positive (0.92) classes
 - Very high recall on negative class (0.96) - catches almost all negative sentiment
 
@@ -86,7 +86,7 @@ positive        62        7       265
 
 ---
 
-## Phase 2: Model Optimization
+## Phase 2: Model Optimisation
 **Status:** In Progress (Jan 22, 2026)
 > ⚠ **NOTE**: Early experiments in this section (Dec 19) contain data leakage (inflated scores). See [ Data Leakage Fix & Multi-Task Validation](#data-leakage-fix--multi-task-validation) for the first scientifically valid results.
 
@@ -173,7 +173,7 @@ Comparing Single-Task (Classification) vs Multi-Task (Class + Regression) on the
 - LoRA r8 (single-task): Overall **71.0%**, PhraseBank **94.12%**, Twitter **65.50%**, FiQA **77.42%**.
 
 **Interpretation:**
-- The optimization objective (Twitter 50%, PhraseBank 25%, FiQA 25%) explicitly rewards robustness across diverse sources, and under that framing full FinBERT is the best-performing and most stable model.  
+- The optimisation objective (Twitter 50%, PhraseBank 25%, FiQA 25%) explicitly rewards robustness across diverse sources, and under that framing full FinBERT is the best-performing and most stable model.  
 - LoRA still provides an appealing “small model” option: with ~1% of the storage footprint it learns meaningful signals (including on FiQA), even if it does not match full fine-tuning on the hardest domain-shift cases.
 - Single-task runs are useful as fast iteration cycles (simpler architecture), but multi-task training is the most consistent route to higher overall performance on the fixed multi-source benchmark.
 > See [EXPERIMENTS.md](EXPERIMENTS.md#lora-implementation--tuning) for detailed information.
@@ -228,7 +228,7 @@ Only if Phase 3 proves valuable
 **2026-01-12**: Data Cleaning Ablation Study
 
 - Tested aggressive data cleaning (filtering short/noisy samples)
-- **Finding:** Cleaning did not improve generalization on matched distributions
+- **Finding:** Cleaning did not improve generalisation on matched distributions
 - **Decision:** Kept cleaning utilities but disabled by default
 
 **2026-01-19**: Dataset Pipeline Refactoring

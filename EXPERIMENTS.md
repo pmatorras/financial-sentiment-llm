@@ -1,6 +1,6 @@
 # Experiment Log
 
-## Phase 2: Model optimisation
+## Phase 2: Model Optimisation
 >WARNING (Jan 03, 2026):
 Results in this section (Dec 19 experiments) were obtained using a preprocessing pipeline that contained Data Leakage (Upsampling was applied before the Train/Test split).
 While the accuracy on FiQA remained low (36%), the PhraseBank/Twitter scores may be inflated due to duplicate samples appearing in both sets.
