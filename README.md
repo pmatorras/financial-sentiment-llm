@@ -1,14 +1,12 @@
 # Financial Sentiment LLM
+[![Open in Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-md.svg)](https://huggingface.co/spaces/pmatorras/financial-sentiment-demo)
 
-Fine-tuning lightweight LLMs for financial sentiment analysis using FinBERT.
+![Python](https://img.shields.io/badge/python-3.10-blue.svg)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)
+![Transformers](https://img.shields.io/badge/🤗%20Transformers-4.0+-yellow.svg)
 
-**🚀 [Try Live Demo](https://huggingface.co/spaces/pmatorras/financial-sentiment-demo)** - Test the model on real financial text
+Fine-tuning FinBERT for financial sentiment analysis to integrate sentiment features into equity selection pipelines ([financial-ML](https://github.com/pmatorras/financial-ML)).
 
-## Project Goal
-
-Learn LLM fine-tuning techniques by building a financial sentiment classifier, then integrate sentiment features into equity selection pipeline ([financial-ML](https://github.com/pmatorras/financial-ML)).
-
-**Built with**: Python 3.10 - PyTorch - Hugging Face Transformers - Pandas
 
 ## Key Results (Phase 2)
 
@@ -20,8 +18,9 @@ Learn LLM fine-tuning techniques by building a financial sentiment classifier, t
 | **Best Performance** | **FinBERT Multi-Task** | **85.4%** | ~420 MB | -  Best generalization (+4.4%)<br>-  Necessary for forum discussions (FiQA) |
 | **Best Efficiency** | **FinBERT LoRA (r16)** | 83.2% | **~5 MB** | -  **99% Storage Savings**<br>-  Matches performance on News/Twitter |
 
-**Next Steps:** Phase 3 - Deployment \& Integration into Financial-ML pipeline.
+**🚀 [Try Live Demo](https://pablo.matorras.com/projects/finsentiment.html)** - Test the model on real financial text
 
+**Next Steps:** Phase 3 - Deployment \& Integration into Financial-ML pipeline.
 
 ## Model Architecture & Training
 
@@ -175,6 +174,17 @@ python -m finsentiment train --model-name distilbert  # Lightweight variant
 # All models support multi-task architecture (default) or single-task
 python -m finsentiment train --model-type single
 ```
+### Run the Demo locally
+```bash
+# Install demo dependencies
+pip install -e ".[demo]"
+mv models/finbert_multi_task_model.pt models/multi_task_model_phase2.pt #Or any other chosen model
+# Launch the web interface
+python app.py
+# Opens at http://0.0.0.0:7860
+```
+> The local demo runs the same interface as the [**live HuggingFace Space**](https://huggingface.co/spaces/pmatorras/financial-sentiment-demo)
+
 **Training Time:**
 - **GPU (RTX 4050):** ~2 minutes per epoch
 - **CPU (Intel Core Ultra 7):** ~20 minutes per epoch
