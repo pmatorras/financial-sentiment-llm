@@ -22,6 +22,37 @@ Fine-tuning FinBERT for financial sentiment analysis to integrate sentiment feat
 
 **Next Steps:** Phase 3 - Deployment \& Integration into Financial-ML pipeline.
 
+## Pipeline Architecture
+
+```mermaid
+flowchart LR
+    subgraph Data["Training Data (40K+ samples)"]
+        PB[Financial PhraseBank<br/><i>Professional News</i>]
+        TW[Twitter Financial<br/><i>Social Media</i>]
+        FQ[FiQA<br/><i>Forum Discussions</i>]
+    end
+    
+    subgraph Training["Offline Training (Local/GPU)"]
+        PB --> Train[FinBERT Multi-Task<br/>Classification + Regression]
+        TW --> Train
+        FQ --> Train
+        Train -->|Save| Model[Model Checkpoint<br/>420MB .pt file]
+    end
+    
+    subgraph Serving["Production Serving (HF Spaces)"]
+        Model -->|Load| App[Gradio Interface]
+        App -->|Inference| Logic[Sentiment Output<br/>3-class + score]
+    end
+    
+    Browser[User] -->|Input Text| App
+    App -->|JSON Response| Browser
+
+```
+**Design Decisions:**
+- **Offline Training**: Computationally expensive fine-tuning runs locally on GPU (2 min/epoch), producing versioned model checkpoints
+- **Lightweight Serving**: Hugging Face Spaces hosts the inference endpoint with automatic scaling and global CDN
+- **Model Versioning**: Training outputs are saved as `.pt` files, enabling rollback and A/B testing
+- **Live Demo**: Try the deployed model at [pablo.matorras.com/projects/finsentiment.html](https://pablo.matorras.com/projects/finsentiment.html)
 ## Model Architecture & Training
 
 To handle the diverse nature of financial text, this project implements a **Multi-Task FinBERT** architecture. Unlike standard classifiers, this model shares a BERT backbone with two task-specific heads:
@@ -45,6 +76,22 @@ We compared our Multi-Task architecture against a standard Single-Task FinBERT b
 - **Multi-Task Loss:** We combine Cross-Entropy (for classes) and MSE (for scores) to handle diverse data formats simultaneously.
 - **Robust Training:** Includes Early Stopping (patience=2) to prevent overfitting and fixed random seeds for Reproducibility.
 - **Loss weighting:** Multi-task loss uses Cross-Entropy (classification) + weighted MSE (regression); defaults are rescaled to `1/10` for implementation convenience while preserving the original 1:10 ratio.
+
+flowchart LR
+    subgraph Training["Offline Training (Local/GPU)"]
+        Raw[Financial PhraseBank] --> Train[FinBERT Fine-Tuning]
+        Train -->|Export| Model[Model Artifact .bin]
+    end
+
+    subgraph Serving["Model Serving (Hugging Face Spaces)"]
+        Model -->|Load| App[FastAPI/Gradio App]
+        App -->|Inference| Logic[Sentiment Logic]
+    end
+
+    subgraph Client["User Interface"]
+        Browser[Web Browser] -->|Input Text| App
+        App -->|JSON/Prediction| Browser
+    end
 
 **Lightweight alternative (LoRA)**
 
